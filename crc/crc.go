@@ -7,7 +7,8 @@ type CRC struct {
 func (this *CRC) Calculate(data []byte, size uint64) uint64 {
 	var dwSize uint64
 	dwSize = size
-	pData := data
+	pData := make([]byte, len(data))
+	copy(pData, data)
 	var dwCrc uint64
 	dwCrc = 0
 	var k uint64

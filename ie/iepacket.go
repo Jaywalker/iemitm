@@ -8,7 +8,27 @@ type IEHeader struct {
 	FrameKind     byte
 	FrameNumber   uint16
 	FrameExpected uint16
+	Compressed    byte // This tells us if we're using Zlib compression (Best Compression flag)
 	CRC32         uint32
+}
+
+const IEHeaderSize int = 18
+
+type JMPacketHeader struct {
+	IEHeader
+	JM           [2]byte
+	Unknown1     byte
+	Unknown2     byte
+	Unknown3     byte
+	PacketLength byte
+	Unknown4     uint32
+}
+
+const JMPacketHeaderSize int = IEHeaderSize + 10
+
+type JMPacketCompressed struct {
+	JMPacketHeader
+	Data []byte
 }
 
 //Not sure what to call this.
