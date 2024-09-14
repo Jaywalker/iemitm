@@ -39,9 +39,8 @@ func processPacket(packet interprocess.PacketData) {
 		return
 	}
 
-	crcChecker := crc.New()
-	validatedCrc := crcChecker.Calculate(packet.Data[8:packet.Size], uint64(packet.Size-8))
-	// fmt.Println("DEBUG:", hex.EncodeToString(buf[8:n]))
+	// crcChecker := crc.New()
+	// validatedCrc := crcChecker.Calculate(packet.Data[8:packet.Size], uint64(packet.Size-8))
 
 	if packet.Size == 36 { // Pre-Name, Post-Auth Ping
 		fmt.Println("DPlay Ping/Pong")
@@ -52,55 +51,83 @@ func processPacket(packet interprocess.PacketData) {
 	} else {
 		twoLetterIdent := string(packet.Data[ie.IEHeaderSize : ie.IEHeaderSize+2])
 		if twoLetterIdent == "JM" {
-
 			var jmHeader ie.JMPacketHeader
 			if err := binary.Read(bytes.NewReader(packet.Data), binary.BigEndian, &jmHeader); err != nil {
 				fmt.Println("binary.Read failed:", err)
 				return
 			}
 			if header.Compressed == 1 {
-				jmCompressed := ie.JMPacketCompressed{jmHeader, []byte{}}
+				jmCompressed := ie.JMPacketCompressed{jmHeader, 0, []byte{}}
 				jmCompressed.Data = append(packet.Data[ie.JMPacketHeaderSize:packet.Size])
-				fmt.Printf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x vs %x - %c%c Unk1: %x Unk2: %x Unk3: %x Len: %d - ", jmCompressed.PlayerIDFrom, jmCompressed.PlayerIDTo, jmCompressed.FrameKind, jmCompressed.FrameNumber, jmCompressed.FrameExpected, jmCompressed.Compressed, jmCompressed.CRC32, validatedCrc, jmCompressed.JM[0], jmCompressed.JM[1], jmCompressed.Unknown1, jmCompressed.Unknown2, jmCompressed.Unknown3, uint8(jmCompressed.PacketLength))
-				looksPromising := false
-				compressedOffset := -1
-				for i, v := range jmCompressed.Data {
-					if !looksPromising && v == 0x78 {
-						looksPromising = true
-					} else if looksPromising {
-						if v == 0x01 || v == 0x5e || v == 0x9c || v == 0xda {
-							compressedOffset = i - 1
-							break
-						}
-					}
-
+				compressedOffset := 1 // May not actually be 1 all the time, but the only compressed msg I get now that's not 0xFF it is
+				if jmCompressed.SpecMsgFlag == 0xff {
+					compressedOffset = 4
 				}
-				if compressedOffset > -1 {
-					if compressedOffset != 0 {
-						fmt.Printf("Found data before compression ")
-						for i := 0; i < compressedOffset; i++ {
-							fmt.Printf("%x ", jmCompressed.Data[i])
-						}
-						fmt.Printf("- ")
-					}
-
-					decompressed, err := decompress(jmCompressed.Data, compressedOffset, (int(jmCompressed.PacketLength) - compressedOffset))
-					if err != nil {
-						fmt.Println("Failed to decompress data:", err)
+				if compressedOffset != 1 {
+					if err := binary.Read(bytes.NewReader(jmCompressed.Data[0:4]), binary.BigEndian, &jmCompressed.DecompressedSize); err != nil {
+						fmt.Println("binary.Read failed:", err)
+						fmt.Printf(jmCompressed.String() + " - ")
 						fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(jmCompressed.Data[compressedOffset:(int(jmCompressed.PacketLength)-compressedOffset)]))
-					} else {
+						return
+					}
+					jmCompressed.Data = append(jmCompressed.Data[:compressedOffset], jmCompressed.Data[compressedOffset:]...)
+				}
+
+				decompressed, err := decompress(jmCompressed.Data, compressedOffset, (int(jmCompressed.PacketLength) - compressedOffset))
+
+				if err != nil {
+					fmt.Println("Failed to decompress data:", err)
+					fmt.Printf(jmCompressed.String() + " - ")
+					fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(jmCompressed.Data[compressedOffset:(int(jmCompressed.PacketLength)-compressedOffset)]))
+				} else {
+					switch jmHeader.SpecMsgType {
+					case ie.IE_SPEC_MSG_TYPE_CHAR_ARBITRATION:
+						switch jmHeader.SpecMsgSubtype {
+						case ie.IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO:
+							var servStatus ie.IECharArbServerStatus
+							if err := binary.Read(bytes.NewReader(decompressed), binary.BigEndian, &servStatus); err != nil {
+								fmt.Println("binary.Read failed:", err)
+								fmt.Printf(jmCompressed.String() + " - ")
+								fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(decompressed))
+							} else {
+								fmt.Println("--------------------------")
+								fmt.Println(servStatus.String())
+								fmt.Println("--------------------------")
+							}
+						default:
+							fmt.Printf(jmCompressed.String() + " - ")
+							fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(decompressed))
+						}
+					default:
+						fmt.Printf(jmCompressed.String() + " - ")
 						fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(decompressed))
 					}
-				} else {
-					fmt.Println("Could not find compressed data in the packet data!!")
 				}
 			} else {
-				fmt.Printf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x vs %x - %c%c Unk1: %x Unk2: %x Unk3: %x Len: %d - ", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, validatedCrc, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.Unknown3, uint8(jmHeader.PacketLength))
-				fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+				switch jmHeader.SpecMsgType {
+				case ie.IE_SPEC_MSG_TYPE_CHAR_ARBITRATION:
+					switch jmHeader.SpecMsgSubtype {
+					case ie.IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY:
+						var charReady ie.IECharArbToggleCharReady
+						if err := binary.Read(bytes.NewReader(packet.Data), binary.BigEndian, &charReady); err != nil {
+							fmt.Println("binary.Read failed:", err)
+							fmt.Printf(jmHeader.String())
+							fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+						} else {
+							fmt.Printf("Player %x Indicates %s\n", jmHeader.PlayerIDFrom, charReady.String())
+						}
+					default:
+						fmt.Printf(jmHeader.String() + " - ")
+						fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+					}
+				default:
+					fmt.Printf(jmHeader.String() + " - ")
+					fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+				}
 			}
 		} else {
 			fmt.Println("Unhandled Two Letter Ident")
-			fmt.Printf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x vs %x - ", header.PlayerIDFrom, header.PlayerIDTo, header.FrameKind, header.FrameNumber, header.FrameExpected, header.Compressed, header.CRC32, validatedCrc)
+			fmt.Printf(header.String() + " - ")
 			fmt.Println(packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.IEHeaderSize:packet.Size]))
 		}
 	}
