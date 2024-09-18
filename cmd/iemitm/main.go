@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strconv"
@@ -67,6 +66,9 @@ func UDPProxyListener(port string) {
 
 		b := buf[:n]
 
+		forwardPacket := true
+		forwardRespBuf := false
+		var respPacket interprocess.RespPacketData
 		if port != ":2350" { // DPlay ports. 2350 seems to be BG (or maybe IE) specific
 			packet := dplay.NewDPlayPacket(b)
 			if packet == nil {
@@ -112,22 +114,51 @@ func UDPProxyListener(port string) {
 				data := &interprocess.PacketData{Source: source, Dest: dest, Port: port, Size: n, Data: buf}
 				err := enc.Encode(data)
 				if err != nil {
-					log.Fatal("encode error:", err)
-				}
-				_, err = decoderSock.Write(networkBytes.Bytes())
-				if err != nil {
-					decoderSock.Close()
-					decoderSock = nil
+					fmt.Println("encode error:", err)
+				} else {
+					_, err = decoderSock.Write(networkBytes.Bytes())
+					if err != nil {
+						decoderSock.Close()
+						decoderSock = nil
+					} else {
+						dec := gob.NewDecoder(decoderSock)
+
+						err = dec.Decode(&respPacket)
+						if err != nil {
+							fmt.Println("decode error:", err)
+						} else {
+							forwardPacket = respPacket.Forward
+							/*
+								if len(respPacket.Data) > 0 {
+									forwardRespBuf = true
+								}
+							*/
+							if respPacket.Dest != "" {
+								forwardRespBuf = true
+							}
+						}
+					}
 				}
 			}
 		}
 
-		if addr.IP.String() == srvStrAddr {
-			clientOutSock.Write(buf[:n])
-			// fmt.Println("UDP", srvStrAddr+port, " => "+listenerAddr+port, " Sent", n, " bytes: ", hex.EncodeToString(buf[:n]))
-		} else {
-			srvOutSock.Write(buf[:n])
-			// fmt.Println("UDP "+listenerAddr+port, " => ", srvStrAddr+port, " Sent", n, " bytes: ", hex.EncodeToString(buf[:n]))
+		if forwardPacket {
+			if addr.IP.String() == srvStrAddr {
+				clientOutSock.Write(buf[:n])
+				// fmt.Println("UDP", srvStrAddr+port, " => "+listenerAddr+port, " Sent", n, " bytes: ", hex.EncodeToString(buf[:n]))
+			} else {
+				srvOutSock.Write(buf[:n])
+				// fmt.Println("UDP "+listenerAddr+port, " => ", srvStrAddr+port, " Sent", n, " bytes: ", hex.EncodeToString(buf[:n]))
+			}
+		}
+
+		if forwardRespBuf {
+			fmt.Println("ForwardBuf Found")
+			if respPacket.Dest == "client" {
+				clientOutSock.Write(respPacket.Data)
+			} else {
+				srvOutSock.Write(respPacket.Data)
+			}
 		}
 	}
 }

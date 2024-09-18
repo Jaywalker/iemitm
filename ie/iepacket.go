@@ -1,6 +1,7 @@
 package ie
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -52,6 +53,79 @@ type JMPacketCompressed struct {
 
 func (jmCompressed JMPacketCompressed) String() string {
 	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Unk3: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x", jmCompressed.PlayerIDFrom, jmCompressed.PlayerIDTo, jmCompressed.FrameKind, jmCompressed.FrameNumber, jmCompressed.FrameExpected, jmCompressed.Compressed, jmCompressed.CRC32, jmCompressed.JM[0], jmCompressed.JM[1], jmCompressed.Unknown1, jmCompressed.Unknown2, jmCompressed.Unknown3, uint8(jmCompressed.PacketLength), jmCompressed.SpecMsgFlag, jmCompressed.SpecMsgType, jmCompressed.SpecMsgSubtype)
+}
+
+type IEMsgPacket struct {
+	IEHeader
+	JM            [2]byte
+	Unknown1      byte // 00
+	Unknown2      byte // 01
+	Unknown3      byte // 00
+	PacketLength  byte
+	MessageLength byte
+	Message       string
+}
+
+func (iemsg IEMsgPacket) Serialize() ([]byte, error) {
+	var serialbuf []byte
+	var err error
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.PlayerIDFrom)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.PlayerIDTo)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.FrameKind)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.FrameNumber)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.FrameExpected)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.Compressed)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.CRC32)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.JM)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.Unknown1)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.Unknown2)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.Unknown3)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.PacketLength)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.MessageLength)
+	if err != nil {
+		return nil, err
+	}
+	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, []byte(iemsg.Message))
+	if err != nil {
+		return nil, err
+	}
+	return serialbuf, nil
 }
 
 const IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY byte = 0x72
