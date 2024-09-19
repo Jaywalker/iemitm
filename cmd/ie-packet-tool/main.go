@@ -170,23 +170,23 @@ func processPacket(packet interprocess.PacketData) (forward bool) {
 					default:
 						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
 					}
-				case ie.IE_SPEC_MSG_TYPE_SERVER_INTRO:
+				case ie.IE_SPEC_MSG_TYPE_INTRO:
 					switch jmHeader.SpecMsgSubtype {
-					case ie.IE_SPEC_MSG_SUBTYPE_SERVER_INTRO:
-						var srvIntroHeader ie.IEServerIntroHeader
-						if err := binary.Read(bytes.NewReader(packet.Data[:ie.IEServerIntroHeaderSize]), binary.BigEndian, &srvIntroHeader); err != nil {
+					case ie.IE_SPEC_MSG_SUBTYPE_INTRO:
+						var introHeader ie.IEIntroHeader
+						if err := binary.Read(bytes.NewReader(packet.Data[:ie.IEIntroHeaderSize]), binary.BigEndian, &introHeader); err != nil {
 							fmt.Fprintln(rl, "binary.Read header failed:", err)
 							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
 							return
 						}
-						var srvIntroFooter ie.IEServerIntroFooter
-						if err := binary.Read(bytes.NewReader(packet.Data[(ie.IEServerIntroHeaderSize+int(srvIntroHeader.VersionStringLen)):]), binary.BigEndian, &srvIntroFooter); err != nil {
+						var introFooter ie.IEIntroFooter
+						if err := binary.Read(bytes.NewReader(packet.Data[(ie.IEIntroHeaderSize+int(introHeader.VersionStringLen)):]), binary.BigEndian, &introFooter); err != nil {
 							fmt.Fprintln(rl, "binary.Read footer failed:", err)
 							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
 							return
 						}
-						srvIntro := ie.IEServerIntro{srvIntroHeader, string(packet.Data[ie.IEServerIntroHeaderSize:(ie.IEServerIntroHeaderSize + int(srvIntroHeader.VersionStringLen))]), srvIntroFooter}
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, srvIntro.String())
+						intro := ie.IEIntro{introHeader, string(packet.Data[ie.IEIntroHeaderSize:(ie.IEIntroHeaderSize + int(introHeader.VersionStringLen))]), introFooter}
+						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, intro.String())
 
 					default:
 						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
