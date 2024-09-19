@@ -241,7 +241,7 @@ func main() {
 	var err error
 	rl, err = readline.NewEx(&readline.Config{
 		UniqueEditLine:  true,
-		Prompt:          "\033[31mie-packet-injector »\033[0m ",
+		Prompt:          "\033[31mie-packet-tool »\033[0m ",
 		HistoryFile:     "/tmp/ie-packet-injector.tmp",
 		AutoComplete:    completer,
 		InterruptPrompt: "^C",
