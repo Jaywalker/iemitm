@@ -142,20 +142,17 @@ func processPacket(packet interprocess.PacketData) (forward bool) {
 							var servStatus ie.IECharArbServerStatus
 							if err := binary.Read(bytes.NewReader(decompressed), binary.BigEndian, &servStatus); err != nil {
 								fmt.Fprintln(rl, "binary.Read failed:", err)
-								fmt.Fprintf(rl, jmCompressed.String()+" - ")
-								fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(decompressed))
+								fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
 							} else {
 								fmt.Fprintln(rl, "--------------------------")
 								fmt.Fprintln(rl, servStatus.String())
 								fmt.Fprintln(rl, "--------------------------")
 							}
 						default:
-							fmt.Fprintf(rl, jmCompressed.String()+" - ")
-							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(decompressed))
+							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
 						}
 					default:
-						fmt.Fprintf(rl, jmCompressed.String()+" - ")
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(decompressed))
+						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
 					}
 				}
 			} else {
@@ -166,25 +163,42 @@ func processPacket(packet interprocess.PacketData) (forward bool) {
 						var charReady ie.IECharArbToggleCharReady
 						if err := binary.Read(bytes.NewReader(packet.Data), binary.BigEndian, &charReady); err != nil {
 							fmt.Fprintln(rl, "binary.Read failed:", err)
-							fmt.Fprintf(rl, jmHeader.String())
-							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
 						} else {
 							fmt.Fprintf(rl, "Player %x Indicates %s\n", jmHeader.PlayerIDFrom, charReady.String())
 						}
 					default:
-						fmt.Fprintf(rl, jmHeader.String()+" - ")
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+					}
+				case ie.IE_SPEC_MSG_TYPE_SERVER_INTRO:
+					switch jmHeader.SpecMsgSubtype {
+					case ie.IE_SPEC_MSG_SUBTYPE_SERVER_INTRO:
+						var srvIntroHeader ie.IEServerIntroHeader
+						if err := binary.Read(bytes.NewReader(packet.Data[:ie.IEServerIntroHeaderSize]), binary.BigEndian, &srvIntroHeader); err != nil {
+							fmt.Fprintln(rl, "binary.Read header failed:", err)
+							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+							return
+						}
+						var srvIntroFooter ie.IEServerIntroFooter
+						if err := binary.Read(bytes.NewReader(packet.Data[(ie.IEServerIntroHeaderSize+int(srvIntroHeader.VersionStringLen)):]), binary.BigEndian, &srvIntroFooter); err != nil {
+							fmt.Fprintln(rl, "binary.Read footer failed:", err)
+							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+							return
+						}
+						srvIntro := ie.IEServerIntro{srvIntroHeader, string(packet.Data[ie.IEServerIntroHeaderSize:(ie.IEServerIntroHeaderSize + int(srvIntroHeader.VersionStringLen))]), srvIntroFooter}
+						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, srvIntro.String())
+
+					default:
+						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
 					}
 				default:
-					fmt.Fprintf(rl, jmHeader.String()+" - ")
-					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
-					fmt.Fprintln(rl, "FULL:", packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[:packet.Size]))
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+					// fmt.Fprintln(rl, "FULL:", packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[:packet.Size]))
 				}
 			}
 		} else {
 			fmt.Fprintln(rl, "Unhandled Two Letter Ident")
-			fmt.Fprintf(rl, header.String()+" - ")
-			fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[ie.IEHeaderSize:packet.Size]))
+			fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, header.String(), " - ", hex.EncodeToString(packet.Data[ie.IEHeaderSize:packet.Size]))
 		}
 	}
 	return

@@ -25,8 +25,6 @@ func (header IEHeader) String() string {
 
 const IEHeaderSize int = 18
 
-const IE_SPEC_MSG_TYPE_CHAR_ARBITRATION byte = 0x4d
-
 type JMPacketHeader struct {
 	IEHeader
 	JM             [2]byte
@@ -53,6 +51,34 @@ type JMPacketCompressed struct {
 func (jmCompressed JMPacketCompressed) String() string {
 	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x DecompressedSize: %x", jmCompressed.PlayerIDFrom, jmCompressed.PlayerIDTo, jmCompressed.FrameKind, jmCompressed.FrameNumber, jmCompressed.FrameExpected, jmCompressed.Compressed, jmCompressed.CRC32, jmCompressed.JM[0], jmCompressed.JM[1], jmCompressed.Unknown1, jmCompressed.Unknown2, jmCompressed.PacketLength, jmCompressed.SpecMsgFlag, jmCompressed.SpecMsgType, jmCompressed.SpecMsgSubtype, jmCompressed.DecompressedSize)
 }
+
+const IE_SPEC_MSG_TYPE_SERVER_INTRO byte = 0x56
+const IE_SPEC_MSG_SUBTYPE_SERVER_INTRO byte = 0x73
+
+type IEServerIntroHeader struct {
+	JMPacketHeader
+	Unknown3         uint8 // 03
+	VersionStringLen uint8
+}
+
+const IEServerIntroHeaderSize int = JMPacketHeaderSize + 2
+
+type IEServerIntro struct {
+	IEServerIntroHeader
+	VersionString string
+	IEServerIntroFooter
+}
+
+func (ieSrvIntro IEServerIntro) String() string {
+	return fmt.Sprintf("Client Version: %s Unk3: 0x%x - VersionStrLen: 0x%x - Unk4: 0x%x", ieSrvIntro.VersionString, ieSrvIntro.Unknown3, ieSrvIntro.VersionStringLen, ieSrvIntro.Unknown4)
+}
+
+type IEServerIntroFooter struct {
+	VersionStringNull uint8  // 00
+	Unknown4          uint32 // 1e000000
+}
+
+const IEServerIntroFooterSize int = 5
 
 type IEMsgPacket struct {
 	IEHeader
@@ -122,6 +148,7 @@ func (iemsg IEMsgPacket) Serialize() ([]byte, error) {
 	return serialbuf, nil
 }
 
+const IE_SPEC_MSG_TYPE_CHAR_ARBITRATION byte = 0x4d
 const IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY byte = 0x72
 
 type IECharArbToggleCharReady struct {
