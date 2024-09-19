@@ -123,19 +123,17 @@ func processPacket(packet interprocess.PacketData) (forward bool) {
 				if compressedOffset != 1 {
 					if err := binary.Read(bytes.NewReader(jmCompressed.Data[0:4]), binary.BigEndian, &jmCompressed.DecompressedSize); err != nil {
 						fmt.Fprintln(rl, "binary.Read failed:", err)
-						fmt.Fprintf(rl, jmCompressed.String()+" - ")
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(jmCompressed.Data[compressedOffset:(int(jmCompressed.PacketLength)-compressedOffset)]))
+						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(jmCompressed.Data[compressedOffset:(jmCompressed.PacketLength-uint16(compressedOffset))]))
 						return
 					}
 					jmCompressed.Data = append(jmCompressed.Data[:compressedOffset], jmCompressed.Data[compressedOffset:]...)
 				}
 
-				decompressed, err := decompress(jmCompressed.Data, compressedOffset, (int(jmCompressed.PacketLength) - compressedOffset))
+				decompressed, err := decompress(jmCompressed.Data, compressedOffset, int(jmCompressed.PacketLength-uint16(compressedOffset)))
 
 				if err != nil {
 					fmt.Fprintln(rl, "Failed to decompress data:", err)
-					fmt.Fprintf(rl, jmCompressed.String()+" - ")
-					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, hex.EncodeToString(jmCompressed.Data[compressedOffset:(int(jmCompressed.PacketLength)-compressedOffset)]))
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(jmCompressed.Data[compressedOffset:(jmCompressed.PacketLength-uint16(compressedOffset))]))
 				} else {
 					switch jmHeader.SpecMsgType {
 					case ie.IE_SPEC_MSG_TYPE_CHAR_ARBITRATION:
@@ -349,10 +347,9 @@ func main() {
 				msgPacket.JM[1] = 'M'
 				msgPacket.Unknown1 = 0
 				msgPacket.Unknown2 = 1
-				msgPacket.Unknown3 = 0
 				msgPacket.Message = strings.Replace(line, "sendmsg server ", "", 1)
 				msgPacket.MessageLength = byte(len(msgPacket.Message))
-				msgPacket.PacketLength = msgPacket.MessageLength + 1
+				msgPacket.PacketLength = uint16(msgPacket.MessageLength) + 1
 
 				serialbuf, err := msgPacket.Serialize()
 				if err != nil {
@@ -388,10 +385,9 @@ func main() {
 				msgPacket.JM[1] = 'M'
 				msgPacket.Unknown1 = 0
 				msgPacket.Unknown2 = 1
-				msgPacket.Unknown3 = 0
 				msgPacket.Message = strings.Replace(line, "sendmsg client ", "", 1)
 				msgPacket.MessageLength = byte(len(msgPacket.Message))
-				msgPacket.PacketLength = msgPacket.MessageLength + 1
+				msgPacket.PacketLength = uint16(msgPacket.MessageLength) + 1
 
 				serialbuf, err := msgPacket.Serialize()
 				if err != nil {

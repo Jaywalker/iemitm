@@ -32,15 +32,14 @@ type JMPacketHeader struct {
 	JM             [2]byte
 	Unknown1       byte // 00
 	Unknown2       byte // 01
-	Unknown3       byte // 00
-	PacketLength   byte
-	SpecMsgFlag    byte
+	PacketLength   uint16
+	SpecMsgFlag    byte // TODO: change all bytes to uint8s?
 	SpecMsgType    byte
 	SpecMsgSubtype byte
 }
 
 func (jmHeader JMPacketHeader) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Unk3: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.Unknown3, uint8(jmHeader.PacketLength), jmHeader.SpecMsgFlag, jmHeader.SpecMsgType, jmHeader.SpecMsgSubtype)
+	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.PacketLength, jmHeader.SpecMsgFlag, jmHeader.SpecMsgType, jmHeader.SpecMsgSubtype)
 }
 
 const JMPacketHeaderSize int = IEHeaderSize + 9
@@ -52,7 +51,7 @@ type JMPacketCompressed struct {
 }
 
 func (jmCompressed JMPacketCompressed) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Unk3: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x", jmCompressed.PlayerIDFrom, jmCompressed.PlayerIDTo, jmCompressed.FrameKind, jmCompressed.FrameNumber, jmCompressed.FrameExpected, jmCompressed.Compressed, jmCompressed.CRC32, jmCompressed.JM[0], jmCompressed.JM[1], jmCompressed.Unknown1, jmCompressed.Unknown2, jmCompressed.Unknown3, uint8(jmCompressed.PacketLength), jmCompressed.SpecMsgFlag, jmCompressed.SpecMsgType, jmCompressed.SpecMsgSubtype)
+	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x DecompressedSize: %x", jmCompressed.PlayerIDFrom, jmCompressed.PlayerIDTo, jmCompressed.FrameKind, jmCompressed.FrameNumber, jmCompressed.FrameExpected, jmCompressed.Compressed, jmCompressed.CRC32, jmCompressed.JM[0], jmCompressed.JM[1], jmCompressed.Unknown1, jmCompressed.Unknown2, jmCompressed.PacketLength, jmCompressed.SpecMsgFlag, jmCompressed.SpecMsgType, jmCompressed.SpecMsgSubtype, jmCompressed.DecompressedSize)
 }
 
 type IEMsgPacket struct {
@@ -60,8 +59,7 @@ type IEMsgPacket struct {
 	JM            [2]byte
 	Unknown1      byte // 00
 	Unknown2      byte // 01
-	Unknown3      byte // 00
-	PacketLength  byte
+	PacketLength  uint16
 	MessageLength byte
 	Message       string
 }
@@ -106,10 +104,6 @@ func (iemsg IEMsgPacket) Serialize() ([]byte, error) {
 		return nil, err
 	}
 	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.Unknown2)
-	if err != nil {
-		return nil, err
-	}
-	serialbuf, err = binary.Append(serialbuf, binary.BigEndian, iemsg.Unknown3)
 	if err != nil {
 		return nil, err
 	}
