@@ -173,9 +173,10 @@ type IECharArbServerStatus struct {
 	CharIsReady                 [6]byte
 	Unknown4                    [6]byte
 	CharOwnerPlayerID           [6]uint32
-	Unknown5                    [2]byte
+	ImportCharSettings          byte
+	RestrictStores              byte
 	ListenToJoinRequests        byte
-	Unknown6                    [29]byte
+	Unknown5                    [29]byte
 }
 
 func (charArbServStatus IECharArbServerStatus) String() string {
@@ -333,7 +334,24 @@ func (charArbServStatus IECharArbServerStatus) String() string {
 	for k, v := range charArbServStatus.CharOwnerPlayerID {
 		ret += fmt.Sprintf("\nCharacter "+strconv.Itoa(k)+" is controlled by %x", v)
 	}
-	ret += "\nUnk5: " + hex.EncodeToString(charArbServStatus.Unknown5[:])
+	ret += "\nImport Character: "
+	if charArbServStatus.ImportCharSettings == 1 {
+		ret += "Statistics"
+	} else if charArbServStatus.ImportCharSettings == 3 {
+		ret += "Statistics, Experience"
+	} else if charArbServStatus.ImportCharSettings == 7 {
+		ret += "Statistics, Experience, Items"
+	} else {
+		ret += fmt.Sprintf("Unknown Byte Value (0x%x)", charArbServStatus.ImportCharSettings)
+	}
+	ret += "\nRestrict Stores: "
+	if charArbServStatus.RestrictStores == 0 {
+		ret += "No"
+	} else if charArbServStatus.RestrictStores == 1 {
+		ret += "Yes"
+	} else {
+		ret += fmt.Sprintf("Unknown Byte Value (0x%x)", charArbServStatus.RestrictStores)
+	}
 	if charArbServStatus.ListenToJoinRequests == 0 {
 		ret += "\nListenToJoinRequests: No"
 	} else if charArbServStatus.ListenToJoinRequests == 1 {
@@ -341,7 +359,7 @@ func (charArbServStatus IECharArbServerStatus) String() string {
 	} else {
 		ret += fmt.Sprintf("\nListenToJoinRequests: Yes? 0x%x", charArbServStatus.ListenToJoinRequests)
 	}
-	ret += "\nUnk6: " + hex.EncodeToString(charArbServStatus.Unknown6[:])
+	ret += "\nUnk5: " + hex.EncodeToString(charArbServStatus.Unknown5[:])
 	return ret
 }
 
