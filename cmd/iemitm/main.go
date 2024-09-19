@@ -105,11 +105,11 @@ func UDPProxyListener(port string) {
 				source := ""
 				dest := ""
 				if addr.IP.String() == srvStrAddr {
-					source = srvStrAddr
-					dest = listenerAddr
+					source = "Client"
+					dest = "Server"
 				} else {
-					source = listenerAddr
-					dest = srvStrAddr
+					source = "Server"
+					dest = "Client"
 				}
 				data := &interprocess.PacketData{Source: source, Dest: dest, Port: port, Size: n, Data: buf}
 				err := enc.Encode(data)
