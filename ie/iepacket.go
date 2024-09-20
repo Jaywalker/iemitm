@@ -12,10 +12,10 @@ import (
 type IEHeader struct {
 	PlayerIDFrom  uint32
 	PlayerIDTo    uint32 //Server seems to be 0001 //
-	FrameKind     byte
+	FrameKind     uint8
 	FrameNumber   uint16
 	FrameExpected uint16
-	Compressed    byte // This tells us if we're using Zlib compression (Best Compression flag)
+	Compressed    uint8 // This tells us if we're using Zlib compression (Best Compression flag)
 	CRC32         uint32
 }
 
@@ -28,12 +28,12 @@ const IEHeaderSize int = 18
 type JMPacketHeader struct {
 	IEHeader
 	JM             [2]byte
-	Unknown1       byte // 00
-	Unknown2       byte // 01
+	Unknown1       uint8 // 00
+	Unknown2       uint8 // 01
 	PacketLength   uint16
-	SpecMsgFlag    byte // TODO: change all bytes to uint8s?
-	SpecMsgType    byte
-	SpecMsgSubtype byte
+	SpecMsgFlag    uint8 // TODO: change all bytes to uint8s?
+	SpecMsgType    uint8
+	SpecMsgSubtype uint8
 }
 
 func (jmHeader JMPacketHeader) String() string {
@@ -83,10 +83,10 @@ const IEIntroFooterSize int = 5
 type IEMsgPacket struct {
 	IEHeader
 	JM            [2]byte
-	Unknown1      byte // 00
-	Unknown2      byte // 01
+	Unknown1      uint8 // 00
+	Unknown2      uint8 // 01
 	PacketLength  uint16
-	MessageLength byte
+	MessageLength uint8
 	Message       string
 }
 
@@ -148,12 +148,12 @@ func (iemsg IEMsgPacket) Serialize() ([]byte, error) {
 	return serialbuf, nil
 }
 
-const IE_SPEC_MSG_TYPE_CHAR_ARBITRATION byte = 0x4d
-const IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY byte = 0x72
+const IE_SPEC_MSG_TYPE_CHAR_ARBITRATION uint8 = 0x4d
+const IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY uint8 = 0x72
 
 type IECharArbToggleCharReady struct {
 	JMPacketHeader
-	CharacterNum byte
+	CharacterNum uint8
 	ReadyStatus  uint32
 }
 
@@ -168,35 +168,35 @@ func (charReady IECharArbToggleCharReady) String() string {
 	return "Character " + strconv.Itoa(int(charReady.CharacterNum)) + " is ready (" + strconv.Itoa(int(charReady.ReadyStatus)) + ")."
 }
 
-const IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO byte = 0x53
+const IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO uint8 = 0x53
 
 type IECharArbServerStatus struct {
 	Unknown1                    [2]byte
-	DefaultPermBuyAndSell       byte
-	DefaultPermTravel           byte
-	DefaultPermDialog           byte
-	DefaultPermViewCharacters   byte
-	DefaultPermPause            byte
-	DefaultPermHasBeenLeaderIsh byte
-	DefaultPermLeader           byte
-	DefaultPermModifyCharacters byte
+	DefaultPermBuyAndSell       uint8
+	DefaultPermTravel           uint8
+	DefaultPermDialog           uint8
+	DefaultPermViewCharacters   uint8
+	DefaultPermPause            uint8
+	DefaultPermHasBeenLeaderIsh uint8
+	DefaultPermLeader           uint8
+	DefaultPermModifyCharacters uint8
 	Unknown2                    [20]byte
 	Player1ID                   uint32
-	Player1PermBuyAndSell       byte
-	Player1PermTravel           byte
-	Player1PermDialog           byte
-	Player1PermViewCharacters   byte
-	Player1PermPause            byte
-	Player1PermHasBeenLeaderIsh byte
-	Player1PermLeader           byte
-	Player1PermModifyCharacters byte
+	Player1PermBuyAndSell       uint8
+	Player1PermTravel           uint8
+	Player1PermDialog           uint8
+	Player1PermViewCharacters   uint8
+	Player1PermPause            uint8
+	Player1PermHasBeenLeaderIsh uint8
+	Player1PermLeader           uint8
+	Player1PermModifyCharacters uint8
 	Unknown3                    [89]byte
-	CharIsReady                 [6]byte
+	CharIsReady                 [6]uint8
 	Unknown4                    [6]byte
 	CharOwnerPlayerID           [6]uint32
-	ImportCharSettings          byte
-	RestrictStores              byte
-	ListenToJoinRequests        byte
+	ImportCharSettings          uint8
+	RestrictStores              uint8
+	ListenToJoinRequests        uint8
 	Unknown5                    [29]byte
 }
 
