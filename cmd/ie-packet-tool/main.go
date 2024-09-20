@@ -108,97 +108,103 @@ func processPacket(packet interprocess.PacketData) (forward bool) {
 	} else {
 		twoLetterIdent := string(packet.Data[ie.IEHeaderSize : ie.IEHeaderSize+2])
 		if twoLetterIdent == "JM" {
-			var jmHeader ie.JMPacketHeader
-			if err := binary.Read(bytes.NewReader(packet.Data), binary.BigEndian, &jmHeader); err != nil {
-				fmt.Fprintln(rl, "binary.Read failed:", err)
-				return
-			}
-			if header.Compressed == 1 {
-				jmCompressed := ie.JMPacketCompressed{jmHeader, 0, []byte{}}
-				jmCompressed.Data = append(packet.Data[ie.JMPacketHeaderSize:packet.Size])
-				compressedOffset := 1 // May not actually be 1 all the time, but the only compressed msg I get now that's not 0xFF it is
-				if jmCompressed.SpecMsgFlag == 0xff {
-					compressedOffset = 4
-				}
-				if compressedOffset != 1 {
-					if err := binary.Read(bytes.NewReader(jmCompressed.Data[0:4]), binary.BigEndian, &jmCompressed.DecompressedSize); err != nil {
-						fmt.Fprintln(rl, "binary.Read failed:", err)
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(jmCompressed.Data[compressedOffset:(jmCompressed.PacketLength-uint16(compressedOffset))]))
-						return
-					}
-					jmCompressed.Data = append(jmCompressed.Data[:compressedOffset], jmCompressed.Data[compressedOffset:]...)
-				}
-
-				decompressed, err := decompress(jmCompressed.Data, compressedOffset, int(jmCompressed.PacketLength-uint16(compressedOffset)))
-
-				if err != nil {
-					fmt.Fprintln(rl, "Failed to decompress data:", err)
-					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(jmCompressed.Data[compressedOffset:(jmCompressed.PacketLength-uint16(compressedOffset))]))
-				} else {
-					switch jmHeader.SpecMsgType {
-					case ie.IE_SPEC_MSG_TYPE_CHAR_ARBITRATION:
-						switch jmHeader.SpecMsgSubtype {
-						case ie.IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO:
-							var servStatus ie.IECharArbServerStatus
-							if err := binary.Read(bytes.NewReader(decompressed), binary.BigEndian, &servStatus); err != nil {
-								fmt.Fprintln(rl, "binary.Read failed:", err)
-								fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
-							} else {
-								fmt.Fprintln(rl, "--------------------------")
-								fmt.Fprintln(rl, servStatus.String())
-								fmt.Fprintln(rl, "--------------------------")
-							}
-						default:
-							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
-						}
-					default:
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
-					}
-				}
-			} else {
-				switch jmHeader.SpecMsgType {
-				case ie.IE_SPEC_MSG_TYPE_CHAR_ARBITRATION:
-					switch jmHeader.SpecMsgSubtype {
-					case ie.IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY:
-						var charReady ie.IECharArbToggleCharReady
-						if err := binary.Read(bytes.NewReader(packet.Data), binary.BigEndian, &charReady); err != nil {
-							fmt.Fprintln(rl, "binary.Read failed:", err)
-							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
-						} else {
-							fmt.Fprintf(rl, "Player %x Indicates %s\n", jmHeader.PlayerIDFrom, charReady.String())
-						}
-					default:
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
-					}
-				case ie.IE_SPEC_MSG_TYPE_INTRO:
-					switch jmHeader.SpecMsgSubtype {
-					case ie.IE_SPEC_MSG_SUBTYPE_INTRO:
-						var introHeader ie.IEIntroHeader
-						if err := binary.Read(bytes.NewReader(packet.Data[:ie.IEIntroHeaderSize]), binary.BigEndian, &introHeader); err != nil {
-							fmt.Fprintln(rl, "binary.Read header failed:", err)
-							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
-							return
-						}
-						var introFooter ie.IEIntroFooter
-						if err := binary.Read(bytes.NewReader(packet.Data[(ie.IEIntroHeaderSize+int(introHeader.VersionStringLen)):]), binary.BigEndian, &introFooter); err != nil {
-							fmt.Fprintln(rl, "binary.Read footer failed:", err)
-							fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
-							return
-						}
-						intro := ie.IEIntro{introHeader, string(packet.Data[ie.IEIntroHeaderSize:(ie.IEIntroHeaderSize + int(introHeader.VersionStringLen))]), introFooter}
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, intro.String())
-
-					default:
-						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
-					}
-				default:
-					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
-					// fmt.Fprintln(rl, "FULL:", packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[:packet.Size]))
-				}
-			}
+			return processJMPacket(packet, header)
 		} else {
 			fmt.Fprintln(rl, "Unhandled Two Letter Ident")
 			fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, header.String(), " - ", hex.EncodeToString(packet.Data[ie.IEHeaderSize:packet.Size]))
+		}
+	}
+	return
+}
+
+func processJMPacket(packet interprocess.PacketData, header ie.IEHeader) (forward bool) {
+	forward = true
+	var jmHeader ie.JMPacketHeader
+	if err := binary.Read(bytes.NewReader(packet.Data), binary.BigEndian, &jmHeader); err != nil {
+		fmt.Fprintln(rl, "binary.Read failed:", err)
+		return
+	}
+	if header.Compressed == 1 {
+		jmCompressed := ie.JMPacketCompressed{jmHeader, 0, []byte{}}
+		jmCompressed.Data = append(packet.Data[ie.JMPacketHeaderSize:packet.Size])
+		compressedOffset := 1 // May not actually be 1 all the time, but the only compressed msg I get now that's not 0xFF it is
+		if jmCompressed.SpecMsgFlag == 0xff {
+			compressedOffset = 4
+		}
+		if compressedOffset != 1 {
+			if err := binary.Read(bytes.NewReader(jmCompressed.Data[0:4]), binary.BigEndian, &jmCompressed.DecompressedSize); err != nil {
+				fmt.Fprintln(rl, "binary.Read failed:", err)
+				fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(jmCompressed.Data[compressedOffset:(jmCompressed.PacketLength-uint16(compressedOffset))]))
+				return
+			}
+			jmCompressed.Data = append(jmCompressed.Data[:compressedOffset], jmCompressed.Data[compressedOffset:]...)
+		}
+
+		decompressed, err := decompress(jmCompressed.Data, compressedOffset, int(jmCompressed.PacketLength-uint16(compressedOffset)))
+
+		if err != nil {
+			fmt.Fprintln(rl, "Failed to decompress data:", err)
+			fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(jmCompressed.Data[compressedOffset:(jmCompressed.PacketLength-uint16(compressedOffset))]))
+		} else {
+			switch jmHeader.SpecMsgType {
+			case ie.IE_SPEC_MSG_TYPE_CHAR_ARBITRATION:
+				switch jmHeader.SpecMsgSubtype {
+				case ie.IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO:
+					var servStatus ie.IECharArbServerStatus
+					if err := binary.Read(bytes.NewReader(decompressed), binary.BigEndian, &servStatus); err != nil {
+						fmt.Fprintln(rl, "binary.Read failed:", err)
+						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
+					} else {
+						fmt.Fprintln(rl, "--------------------------")
+						fmt.Fprintln(rl, servStatus.String())
+						fmt.Fprintln(rl, "--------------------------")
+					}
+				default:
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
+				}
+			default:
+				fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmCompressed.String()+" - ", hex.EncodeToString(decompressed))
+			}
+		}
+	} else {
+		switch jmHeader.SpecMsgType {
+		case ie.IE_SPEC_MSG_TYPE_CHAR_ARBITRATION:
+			switch jmHeader.SpecMsgSubtype {
+			case ie.IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY:
+				var charReady ie.IECharArbToggleCharReady
+				if err := binary.Read(bytes.NewReader(packet.Data), binary.BigEndian, &charReady); err != nil {
+					fmt.Fprintln(rl, "binary.Read failed:", err)
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+				} else {
+					fmt.Fprintf(rl, "Player %x Indicates %s\n", jmHeader.PlayerIDFrom, charReady.String())
+				}
+			default:
+				fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+			}
+		case ie.IE_SPEC_MSG_TYPE_INTRO:
+			switch jmHeader.SpecMsgSubtype {
+			case ie.IE_SPEC_MSG_SUBTYPE_INTRO:
+				var introHeader ie.IEIntroHeader
+				if err := binary.Read(bytes.NewReader(packet.Data[:ie.IEIntroHeaderSize]), binary.BigEndian, &introHeader); err != nil {
+					fmt.Fprintln(rl, "binary.Read header failed:", err)
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+					return
+				}
+				var introFooter ie.IEIntroFooter
+				if err := binary.Read(bytes.NewReader(packet.Data[(ie.IEIntroHeaderSize+int(introHeader.VersionStringLen)):]), binary.BigEndian, &introFooter); err != nil {
+					fmt.Fprintln(rl, "binary.Read footer failed:", err)
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+					return
+				}
+				intro := ie.IEIntro{introHeader, string(packet.Data[ie.IEIntroHeaderSize:(ie.IEIntroHeaderSize + int(introHeader.VersionStringLen))]), introFooter}
+				fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, intro.String())
+
+			default:
+				fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+			}
+		default:
+			fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmHeader.String(), " - ", hex.EncodeToString(packet.Data[ie.JMPacketHeaderSize:packet.Size]))
+			// fmt.Fprintln(rl, "FULL:", packet.Source, " => ", packet.Dest, hex.EncodeToString(packet.Data[:packet.Size]))
 		}
 	}
 	return
