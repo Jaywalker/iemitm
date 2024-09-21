@@ -20,7 +20,7 @@ type IEHeader struct {
 }
 
 func (header IEHeader) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x", header.PlayerIDFrom, header.PlayerIDTo, header.FrameKind, header.FrameNumber, header.FrameExpected, header.Compressed, header.CRC32)
+	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x", header.PlayerIDFrom, header.PlayerIDTo, header.FrameKind, header.FrameNumber, header.FrameExpected, header.Compressed, header.CRC32)
 }
 
 const IEHeaderSize int = 18
@@ -34,8 +34,7 @@ type JMHeader struct {
 }
 
 func (jmHeader JMHeader) String() string {
-	// return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.PacketLength, jmHeader.SpecMsgFlag, jmHeader.SpecMsgType, jmHeader.SpecMsgSubtype)
-	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.PacketLength)
+	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.PacketLength)
 }
 
 const JMHeaderSize int = IEHeaderSize + 6
@@ -68,7 +67,7 @@ type JMSpecCompressed struct {
 }
 
 func (jmSpecCompressed JMSpecCompressed) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x DecompressedSize: %x", jmSpecCompressed.PlayerIDFrom, jmSpecCompressed.PlayerIDTo, jmSpecCompressed.FrameKind, jmSpecCompressed.FrameNumber, jmSpecCompressed.FrameExpected, jmSpecCompressed.Compressed, jmSpecCompressed.CRC32, jmSpecCompressed.JM[0], jmSpecCompressed.JM[1], jmSpecCompressed.Unknown1, jmSpecCompressed.Unknown2, jmSpecCompressed.PacketLength, jmSpecCompressed.SpecMsgFlag, jmSpecCompressed.SpecMsgType, jmSpecCompressed.SpecMsgSubtype, jmSpecCompressed.DecompressedSize)
+	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: 0x%x SpecMsgSubtype: 0x%x DecompressedSize: 0x%x", jmSpecCompressed.PlayerIDFrom, jmSpecCompressed.PlayerIDTo, jmSpecCompressed.FrameKind, jmSpecCompressed.FrameNumber, jmSpecCompressed.FrameExpected, jmSpecCompressed.Compressed, jmSpecCompressed.CRC32, jmSpecCompressed.JM[0], jmSpecCompressed.JM[1], jmSpecCompressed.Unknown1, jmSpecCompressed.Unknown2, jmSpecCompressed.PacketLength, jmSpecCompressed.SpecMsgFlag, jmSpecCompressed.SpecMsgType, jmSpecCompressed.SpecMsgSubtype, jmSpecCompressed.DecompressedSize)
 }
 
 type JMSpec struct {
@@ -310,7 +309,7 @@ func (charArbServStatus IECharArbServerStatus) String() string {
 
 	ret += "\nUnk2: " + hex.EncodeToString(charArbServStatus.Unknown2[:])
 
-	ret += fmt.Sprintf("\nPlayer1Perms (%x):", charArbServStatus.Player1ID)
+	ret += fmt.Sprintf("\nPlayer1Perms (0x%x):", charArbServStatus.Player1ID)
 
 	if charArbServStatus.Player1PermBuyAndSell == 0 {
 		ret += "\n\tBuyAndSell: no"
@@ -392,7 +391,7 @@ func (charArbServStatus IECharArbServerStatus) String() string {
 	ret += "\nUnk4: " + hex.EncodeToString(charArbServStatus.Unknown4[:])
 
 	for k, v := range charArbServStatus.CharOwnerPlayerID {
-		ret += fmt.Sprintf("\nCharacter "+strconv.Itoa(k)+" is controlled by %x", v)
+		ret += fmt.Sprintf("\nCharacter "+strconv.Itoa(k)+" is controlled by 0x%x", v)
 	}
 	ret += "\nImport Character: "
 	if charArbServStatus.ImportCharSettings == 1 {
