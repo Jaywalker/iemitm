@@ -25,52 +25,78 @@ func (header IEHeader) String() string {
 
 const IEHeaderSize int = 18
 
-type JMPacketHeader struct {
+type JMHeader struct {
 	IEHeader
-	JM             [2]byte
-	Unknown1       uint8 // 00
-	Unknown2       uint8 // 01
-	PacketLength   uint16
-	SpecMsgFlag    uint8 // TODO: change all bytes to uint8s?
+	JM           [2]byte
+	Unknown1     uint8 // 00
+	Unknown2     uint8 // 01
+	PacketLength uint16
+}
+
+func (jmHeader JMHeader) String() string {
+	// return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.PacketLength, jmHeader.SpecMsgFlag, jmHeader.SpecMsgType, jmHeader.SpecMsgSubtype)
+	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.PacketLength)
+}
+
+const JMHeaderSize int = IEHeaderSize + 6
+
+type JMHeaderCompressed struct {
+	JMHeader
+	DecompressedSize uint32
+}
+
+const JMHeaderCompressedSize int = JMHeaderSize + 4
+
+type JMCompressed struct {
+	JMHeaderCompressed
+	Data []byte
+}
+
+type JMSpecHeaderCompressed struct {
+	JMHeader
+	SpecMsgFlag      uint8
+	SpecMsgType      uint8
+	SpecMsgSubtype   uint8
+	DecompressedSize uint32
+}
+
+const JMSpecHeaderCompressedSize int = JMHeaderSize + 7
+
+type JMSpecCompressed struct {
+	JMSpecHeaderCompressed
+	Data []byte
+}
+
+func (jmSpecCompressed JMSpecCompressed) String() string {
+	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x DecompressedSize: %x", jmSpecCompressed.PlayerIDFrom, jmSpecCompressed.PlayerIDTo, jmSpecCompressed.FrameKind, jmSpecCompressed.FrameNumber, jmSpecCompressed.FrameExpected, jmSpecCompressed.Compressed, jmSpecCompressed.CRC32, jmSpecCompressed.JM[0], jmSpecCompressed.JM[1], jmSpecCompressed.Unknown1, jmSpecCompressed.Unknown2, jmSpecCompressed.PacketLength, jmSpecCompressed.SpecMsgFlag, jmSpecCompressed.SpecMsgType, jmSpecCompressed.SpecMsgSubtype, jmSpecCompressed.DecompressedSize)
+}
+
+type JMSpec struct {
+	JMHeader
+	SpecMsgFlag    uint8
 	SpecMsgType    uint8
 	SpecMsgSubtype uint8
-}
-
-func (jmHeader JMPacketHeader) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x", jmHeader.PlayerIDFrom, jmHeader.PlayerIDTo, jmHeader.FrameKind, jmHeader.FrameNumber, jmHeader.FrameExpected, jmHeader.Compressed, jmHeader.CRC32, jmHeader.JM[0], jmHeader.JM[1], jmHeader.Unknown1, jmHeader.Unknown2, jmHeader.PacketLength, jmHeader.SpecMsgFlag, jmHeader.SpecMsgType, jmHeader.SpecMsgSubtype)
-}
-
-const JMPacketHeaderSize int = IEHeaderSize + 9
-
-type JMPacketCompressed struct {
-	JMPacketHeader
-	DecompressedSize uint32
-	Data             []byte
-}
-
-func (jmCompressed JMPacketCompressed) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x Compressed?: %x CRC32: %x - %c%c Unk1: %x Unk2: %x Len: %d SpecMsgFlag: %x SpecMsgType: %x SpecMsgSubtype: %x DecompressedSize: %x", jmCompressed.PlayerIDFrom, jmCompressed.PlayerIDTo, jmCompressed.FrameKind, jmCompressed.FrameNumber, jmCompressed.FrameExpected, jmCompressed.Compressed, jmCompressed.CRC32, jmCompressed.JM[0], jmCompressed.JM[1], jmCompressed.Unknown1, jmCompressed.Unknown2, jmCompressed.PacketLength, jmCompressed.SpecMsgFlag, jmCompressed.SpecMsgType, jmCompressed.SpecMsgSubtype, jmCompressed.DecompressedSize)
 }
 
 const IE_SPEC_MSG_TYPE_INTRO byte = 0x56
 const IE_SPEC_MSG_SUBTYPE_INTRO byte = 0x73
 
 type IEIntroHeader struct {
-	JMPacketHeader
+	JMHeader
 	Unknown3         uint8 // 03
 	VersionStringLen uint8
 }
 
-const IEIntroHeaderSize int = JMPacketHeaderSize + 2
+const IEIntroHeaderSize int = JMHeaderSize + 2
 
-type IEIntro struct {
+type IEIntroPacket struct {
 	IEIntroHeader
 	VersionString string
 	IEIntroFooter
 }
 
-func (ieSrvIntro IEIntro) String() string {
-	return fmt.Sprintf("Client Version: %s Unk3: 0x%x - VersionStrLen: 0x%x - Unk4: 0x%x", ieSrvIntro.VersionString, ieSrvIntro.Unknown3, ieSrvIntro.VersionStringLen, ieSrvIntro.Unknown4)
+func (ieIntro IEIntroPacket) String() string {
+	return fmt.Sprintf("Client Version: %s Unk3: 0x%x - VersionStrLen: 0x%x - Unk4: 0x%x", ieIntro.VersionString, ieIntro.Unknown3, ieIntro.VersionStringLen, ieIntro.Unknown4)
 }
 
 type IEIntroFooter struct {
@@ -80,14 +106,27 @@ type IEIntroFooter struct {
 
 const IEIntroFooterSize int = 5
 
-type IEMsgPacket struct {
-	IEHeader
-	JM            [2]byte
-	Unknown1      uint8 // 00
-	Unknown2      uint8 // 01
-	PacketLength  uint16
+type IEMsg struct {
 	MessageLength uint8
 	Message       string
+}
+
+func (iemsg IEMsg) String() string {
+	return iemsg.Message
+}
+
+type IEMsgDecompressed struct {
+	JMHeaderCompressed
+	IEMsg
+}
+
+type IEMsgPacket struct {
+	JMHeader
+	IEMsg
+}
+
+func (iemsg IEMsgPacket) String() string {
+	return iemsg.Message
 }
 
 func (iemsg IEMsgPacket) Serialize() ([]byte, error) {
@@ -152,12 +191,12 @@ const IE_SPEC_MSG_TYPE_CHAR_ARBITRATION uint8 = 0x4d
 const IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY uint8 = 0x72
 
 type IECharArbToggleCharReady struct {
-	JMPacketHeader
+	JMSpec
 	CharacterNum uint8
 	ReadyStatus  uint32
 }
 
-const IECharArbToggleCharReadySize int = JMPacketHeaderSize + 5
+const IECharArbToggleCharReadySize int = JMHeaderSize + 5
 
 func (charReady IECharArbToggleCharReady) String() string {
 	if charReady.ReadyStatus == 0 {
@@ -384,4 +423,4 @@ func (charArbServStatus IECharArbServerStatus) String() string {
 	return ret
 }
 
-const IECharArbServerStatusSize int = JMPacketHeaderSize + 398
+const IECharArbServerStatusSize int = JMHeaderSize + 398
