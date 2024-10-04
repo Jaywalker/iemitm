@@ -100,7 +100,11 @@ func processPacket(packet interprocess.PacketData) (forward bool) {
 	if packet.Size == 36 { // Pre-Name, Post-Auth Ping
 		fmt.Fprintln(rl, "DPlay Ping/Pong")
 		return forwardDplayPings
-	} else if packet.Size == ie.IEHeaderSize && header.FrameKind_ == 1 { // Ping!
+	} else if packet.Size == ie.IEHeaderSize && (header.FrameKind_ == 1 || header.FrameKind == 2) { // Ping! Apparently pings can be frameKind 1 or 2?
+		/*
+			DEBUG: FULL: Server => ClientIEHead PlayerFrom: 0x1000000 PlayerTo: 0xad4f6f00 FrameKind: 0x2 FrameNumber: 0x0 FrameExpected: 0xc88 Compressed?: 0x0 CRC32: 0x31b62cfc - 01000000ad4f6f000200000c880031b62cfc
+			ERROR: JMSpecHeaderSize > size
+		*/
 		// fmt.Fprintf(rl, "IEHead PlayerFrom: %x PlayerTo: %x FrameKind: %x FrameNumber: %x FrameExpected: %x CRC32: %x - Ping\n", header.PlayerIDFrom, header.PlayerIDTo, header.FrameKind, header.FrameNumber, header.FrameExpected, header.CRC32) //, crc)
 		// fmt.Fprintln(rl, "")
 		// fmt.Fprintln(rl, "Ping!")
@@ -111,7 +115,7 @@ func processPacket(packet interprocess.PacketData) (forward bool) {
 			return processJMPacket(packet, header)
 		} else {
 			fmt.Fprintln(rl, "Unhandled Two Letter Ident")
-			fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, header.String(), " - ", hex.EncodeToString(packet.Data[ie.IEHeaderSize:packet.Size]))
+			fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, ": ", header.String(), " - ", hex.EncodeToString(packet.Data[ie.IEHeaderSize:packet.Size]))
 		}
 	}
 	return

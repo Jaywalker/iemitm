@@ -43,7 +43,7 @@ func processJMPacket(packet interprocess.PacketData, header ie.IEHeader) (forwar
 				var servStatus ie.IEMPSettingsFullSet
 				if err := binary.Read(bytes.NewReader(decompressed), binary.BigEndian, &servStatus); err != nil {
 					fmt.Fprintln(rl, "binary.Read failed:", err)
-					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmPacket.String()+" - ", hex.EncodeToString(decompressed))
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, ": ", jmPacket.String()+" - ", hex.EncodeToString(decompressed))
 				} else {
 					fmt.Fprintln(rl, servStatus.String())
 				}
@@ -51,38 +51,37 @@ func processJMPacket(packet interprocess.PacketData, header ie.IEHeader) (forwar
 				var charReady ie.IEMPSettingsToggleCharReady
 				if err := binary.Read(bytes.NewReader(decompressed), binary.BigEndian, &charReady); err != nil {
 					fmt.Fprintln(rl, "binary.Read failed:", err)
-					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmPacket.String(), " - ", hex.EncodeToString(decompressed))
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, ": ", jmPacket.String(), " - ", hex.EncodeToString(decompressed))
 				} else {
 					fmt.Fprintf(rl, "Player 0x%x Indicates %s\n", jmPacket.FromPlayerID(), charReady.String())
 				}
 			default:
-				fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, jmPacket.String(), " - ", hex.EncodeToString(decompressed))
+				fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, ": ", jmPacket.String(), " - ", hex.EncodeToString(decompressed))
 			}
-		case ie.IE_SPEC_MSG_TYPE_INTRO:
+		case ie.IE_SPEC_MSG_TYPE_VERSION:
 			switch jmPacket.SpecSubType() {
-			case ie.IE_SPEC_MSG_SUBTYPE_INTRO:
+			case ie.IE_SPEC_MSG_SUBTYPE_VERSION_SERVER:
 				var introHeader ie.IEVersionHeader
 				if err := binary.Read(bytes.NewReader(decompressed[:ie.IEVersionHeaderSize]), binary.BigEndian, &introHeader); err != nil {
 					fmt.Fprintln(rl, "binary.Read header failed:", err)
-					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmPacket.String(), " - ", hex.EncodeToString(decompressed))
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, ": ", jmPacket.String(), " - ", hex.EncodeToString(decompressed))
 					return
 				}
 				var introFooter ie.IEVersionFooter
 				if err := binary.Read(bytes.NewReader(decompressed[(ie.IEVersionHeaderSize+int(introHeader.VersionStringLen)):]), binary.BigEndian, &introFooter); err != nil {
 					fmt.Fprintln(rl, "binary.Read footer failed:", err)
-					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, jmPacket.String(), " - ", hex.EncodeToString(decompressed))
+					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, ": ", jmPacket.String(), " - ", hex.EncodeToString(decompressed))
 					return
 				}
 				intro := ie.IEVersion{introHeader, string(decompressed[ie.IEVersionHeaderSize:(ie.IEVersionHeaderSize + int(introHeader.VersionStringLen))]), introFooter}
-				fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, intro.String())
+				fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, ": ", intro.String())
 
 			default:
-				fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, jmPacket.String(), " - ", hex.EncodeToString(decompressed))
+				fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, ": ", jmPacket.String(), " - ", hex.EncodeToString(decompressed))
 			}
 		default:
-			fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, jmPacket.String()+" - ", hex.EncodeToString(decompressed))
+			fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, ": ", jmPacket.String()+" - ", hex.EncodeToString(decompressed))
 		}
-
 	} else {
 		printDebug("Not a Spec Message! 0x%x", packet.Data[ie.JMHeaderSize:ie.JMHeaderSize+1])
 		// Non-Spec messages are just messages from players

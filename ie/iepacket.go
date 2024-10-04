@@ -9,7 +9,11 @@ import (
 	"strconv"
 )
 
-//NOTE: -Ish suffix imply a guess, not fact
+func specMsgSubtypeToString(msgSubType uint8) string {
+	switch msgSubType {
+	}
+	return "UNKNOWN"
+}
 
 type IEHeader struct {
 	PlayerIDFrom  uint32
@@ -66,6 +70,9 @@ func NewJMPacket(data []byte, size int) (JMPacket, error) {
 				return nil, errors.New("ERROR: JMSpecHeader binary.Read failed: " + err.Error())
 			}
 			jmSpec := JMSpec{jmSpecHeader, []byte{}}
+			if JMSpecHeaderSize > size {
+				return nil, errors.New("ERROR: JMSpecHeaderSize > size")
+			}
 			jmSpec.Data = append(data[JMSpecHeaderSize:size])
 			return jmSpec, nil
 		}
@@ -236,7 +243,8 @@ type JMSpecCompressed struct {
 }
 
 func (jmSpecCompressed JMSpecCompressed) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: %d SpecMsgSubtype: %d DecompressedSize: 0x%x", jmSpecCompressed.PlayerIDFrom, jmSpecCompressed.PlayerIDTo, jmSpecCompressed.FrameKind_, jmSpecCompressed.FrameNum, jmSpecCompressed.FrameExpected, jmSpecCompressed.Compressed, jmSpecCompressed.CRC32, jmSpecCompressed.JM[0], jmSpecCompressed.JM[1], jmSpecCompressed.Unknown1, jmSpecCompressed.Unknown2, jmSpecCompressed.PacketLen, jmSpecCompressed.SpecMsgFlag, jmSpecCompressed.SpecMsgType, jmSpecCompressed.SpecMsgSubtype, jmSpecCompressed.DecompressedSize_)
+	specType, specSubType := specMsgTypeToString(jmSpecCompressed.SpecMsgType, jmSpecCompressed.SpecMsgSubtype)
+	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: %s (%d) SpecMsgSubtype: %s (%d) DecompressedSize: 0x%x", jmSpecCompressed.PlayerIDFrom, jmSpecCompressed.PlayerIDTo, jmSpecCompressed.FrameKind_, jmSpecCompressed.FrameNum, jmSpecCompressed.FrameExpected, jmSpecCompressed.Compressed, jmSpecCompressed.CRC32, jmSpecCompressed.JM[0], jmSpecCompressed.JM[1], jmSpecCompressed.Unknown1, jmSpecCompressed.Unknown2, jmSpecCompressed.PacketLen, jmSpecCompressed.SpecMsgFlag, specType, jmSpecCompressed.SpecMsgType, specSubType, jmSpecCompressed.SpecMsgSubtype, jmSpecCompressed.DecompressedSize_)
 }
 
 func (jmSpecCompressed JMSpecCompressed) FromPlayerID() uint32 {
@@ -304,7 +312,8 @@ type JMSpec struct {
 }
 
 func (jmSpec JMSpec) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: %d SpecMsgSubtype: %d", jmSpec.PlayerIDFrom, jmSpec.PlayerIDTo, jmSpec.FrameKind_, jmSpec.FrameNum, jmSpec.FrameExpected, jmSpec.Compressed, jmSpec.CRC32, jmSpec.JM[0], jmSpec.JM[1], jmSpec.Unknown1, jmSpec.Unknown2, jmSpec.PacketLen, jmSpec.SpecMsgFlag, jmSpec.SpecMsgType, jmSpec.SpecMsgSubtype)
+	specType, specSubType := specMsgTypeToString(jmSpec.SpecMsgType, jmSpec.SpecMsgSubtype)
+	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: %s (%d) SpecMsgSubtype: %s (%d)", jmSpec.PlayerIDFrom, jmSpec.PlayerIDTo, jmSpec.FrameKind_, jmSpec.FrameNum, jmSpec.FrameExpected, jmSpec.Compressed, jmSpec.CRC32, jmSpec.JM[0], jmSpec.JM[1], jmSpec.Unknown1, jmSpec.Unknown2, jmSpec.PacketLen, jmSpec.SpecMsgFlag, specType, jmSpec.SpecMsgType, specSubType, jmSpec.SpecMsgSubtype)
 }
 
 func (jmSpec JMSpec) FromPlayerID() uint32 {
@@ -761,4 +770,516 @@ func (charArbServStatus IEMPSettingsFullSet) String() string {
 	}
 	ret += "\nUnk5: " + hex.EncodeToString(charArbServStatus.Unknown5[:])
 	return ret
+}
+
+func specMsgTypeToString(msgType, msgSubType uint8) (string, string) {
+	switch msgType {
+	case 66:
+		msgTypeStr := "PROGRESSBAR"
+		switch msgSubType {
+		case 83:
+			msgSubTypeStr := "PROGRESSBAR_STATUS"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 67:
+		msgTypeStr := "CMESSAGE"
+		switch msgSubType {
+		case 0:
+			msgSubTypeStr := "CMESSAGE_ADD_ACTION"
+			return msgTypeStr, msgSubTypeStr
+		case 1:
+			msgSubTypeStr := "CMESSAGE_ADD_EFFECT"
+			return msgTypeStr, msgSubTypeStr
+		case 3:
+			msgSubTypeStr := "CMESSAGE_ANIMATION_CHANGE"
+			return msgTypeStr, msgSubTypeStr
+		case 4:
+			msgSubTypeStr := "CMESSAGE_CHANGE_DIRECTION"
+			return msgTypeStr, msgSubTypeStr
+		case 5:
+			msgSubTypeStr := "CMESSAGE_CLEAR_ACTIONS"
+			return msgTypeStr, msgSubTypeStr
+		case 6:
+			msgSubTypeStr := "CMESSAGE_CLEAR_DIALOG_ACTIONS"
+			return msgTypeStr, msgSubTypeStr
+		case 7:
+			msgSubTypeStr := "CMESSAGE_CLEAR_GROUP_SLOT"
+			return msgTypeStr, msgSubTypeStr
+		case 8:
+			msgSubTypeStr := "CMESSAGE_CLEAR_TRIGGERS"
+			return msgTypeStr, msgSubTypeStr
+		case 9:
+			msgSubTypeStr := "CMESSAGE_COLOR_CHANGE"
+			return msgTypeStr, msgSubTypeStr
+		case 10:
+			msgSubTypeStr := "CMESSAGE_COLOR_RESET"
+			return msgTypeStr, msgSubTypeStr
+		case 11:
+			msgSubTypeStr := "CMESSAGE_COLOR_UPDATE"
+			return msgTypeStr, msgSubTypeStr
+		case 12:
+			msgSubTypeStr := "CMESSAGE_CONTAINER_ADD_ITEM"
+			return msgTypeStr, msgSubTypeStr
+		case 13:
+			msgSubTypeStr := "CMESSAGE_CONTAINER_ITEMS"
+			return msgTypeStr, msgSubTypeStr
+		case 14:
+			msgSubTypeStr := "CMESSAGE_CONTAINER_STATUS"
+			return msgTypeStr, msgSubTypeStr
+		case 15:
+			msgSubTypeStr := "CMESSAGE_CUT_SCENE_MODE_STATUS"
+			return msgTypeStr, msgSubTypeStr
+		case 16:
+			msgSubTypeStr := "CMESSAGE_DISPLAY_TEXT"
+			return msgTypeStr, msgSubTypeStr
+		case 17:
+			msgSubTypeStr := "CMESSAGE_DISPLAY_TEXTREF"
+			return msgTypeStr, msgSubTypeStr
+		case 19:
+			msgSubTypeStr := "CMESSAGE_DOOR_STATUS"
+			return msgTypeStr, msgSubTypeStr
+		case 20:
+			msgSubTypeStr := "CMESSAGE_DROP_PATH"
+			return msgTypeStr, msgSubTypeStr
+		case 21:
+			msgSubTypeStr := "CMESSAGE_ENTER_DIALOG"
+			return msgTypeStr, msgSubTypeStr
+		case 23:
+			msgSubTypeStr := "CMESSAGE_ENTER_STORE_MODE"
+			return msgTypeStr, msgSubTypeStr
+		case 24:
+			msgSubTypeStr := "CMESSAGE_EXIT_DIALOG_MODE"
+			return msgTypeStr, msgSubTypeStr
+		case 25:
+			msgSubTypeStr := "CMESSAGE_EXIT_STORE_MODE"
+			return msgTypeStr, msgSubTypeStr
+		case 26:
+			msgSubTypeStr := "CMESSAGE_FIRE_PROJECTILE"
+			return msgTypeStr, msgSubTypeStr
+		case 27:
+			msgSubTypeStr := "CMESSAGE_INSERT_ACTION"
+			return msgTypeStr, msgSubTypeStr
+		case 29:
+			msgSubTypeStr := "CMESSAGE_LEAVE_PARTY"
+			return msgTypeStr, msgSubTypeStr
+		case 31:
+			msgSubTypeStr := "CMESSAGE_PARTY_GOLD"
+			return msgTypeStr, msgSubTypeStr
+		case 32:
+			msgSubTypeStr := "CMESSAGE_PLAY_SOUND"
+			return msgTypeStr, msgSubTypeStr
+		case 33:
+			msgSubTypeStr := "CMESSAGE_PLAY_SOUND_REF"
+			return msgTypeStr, msgSubTypeStr
+		case 35:
+			msgSubTypeStr := "CMESSAGE_REMOVE_REPLIES"
+			return msgTypeStr, msgSubTypeStr
+		case 36:
+			msgSubTypeStr := "CMESSAGE_REPUTATION_CHANGE"
+			return msgTypeStr, msgSubTypeStr
+		case 37:
+			msgSubTypeStr := "CMESSAGE_SET_ACTIVE"
+			return msgTypeStr, msgSubTypeStr
+		case 38:
+			msgSubTypeStr := "CMESSAGE_SET_AISPEED"
+			return msgTypeStr, msgSubTypeStr
+		case 39:
+			msgSubTypeStr := "CMESSAGE_SET_COMMAND_PAUSE"
+			return msgTypeStr, msgSubTypeStr
+		case 40:
+			msgSubTypeStr := "CMESSAGE_SET_DIALOG_WAIT"
+			return msgTypeStr, msgSubTypeStr
+		case 41:
+			msgSubTypeStr := "CMESSAGE_SET_DIRECTION"
+			return msgTypeStr, msgSubTypeStr
+		case 42:
+			msgSubTypeStr := "CMESSAGE_SET_DRAW_POLY"
+			return msgTypeStr, msgSubTypeStr
+		case 43:
+			msgSubTypeStr := "CMESSAGE_SET_FORCE_ACTION_PICK"
+			return msgTypeStr, msgSubTypeStr
+		case 44:
+			msgSubTypeStr := "CMESSAGE_SET_HAPPINESS"
+			return msgTypeStr, msgSubTypeStr
+		case 45:
+			msgSubTypeStr := "CMESSAGE_SET_IN_CUT_SCENE"
+			return msgTypeStr, msgSubTypeStr
+		case 46:
+			msgSubTypeStr := "CMESSAGE_SET_LAST_ATTACKER"
+			return msgTypeStr, msgSubTypeStr
+		case 48:
+			msgSubTypeStr := "CMESSAGE_SET_NUM_TIMES_TALKED_TO"
+			return msgTypeStr, msgSubTypeStr
+		case 49:
+			msgSubTypeStr := "CMESSAGE_SET_PATH"
+			return msgTypeStr, msgSubTypeStr
+		case 50:
+			msgSubTypeStr := "CMESSAGE_SET_SEQUENCE"
+			return msgTypeStr, msgSubTypeStr
+		case 52:
+			msgSubTypeStr := "CMESSAGE_SET_TRIGGER"
+			return msgTypeStr, msgSubTypeStr
+		case 47:
+			msgSubTypeStr := "CMESSAGE_SET_LAST_OBJECT"
+			return msgTypeStr, msgSubTypeStr
+		case 54:
+			msgSubTypeStr := "CMESSAGE_SPRITE_DEATH"
+			return msgTypeStr, msgSubTypeStr
+		case 55:
+			msgSubTypeStr := "CMESSAGE_SPRITE_EQUIPMENT"
+			return msgTypeStr, msgSubTypeStr
+		case 56:
+			msgSubTypeStr := "CMESSAGE_SPRITE_PETRIFY"
+			return msgTypeStr, msgSubTypeStr
+		case 57:
+			msgSubTypeStr := "CMESSAGE_SPRITE_UPDATE"
+			return msgTypeStr, msgSubTypeStr
+		case 58:
+			msgSubTypeStr := "CMESSAGE_START_FOLLOW"
+			return msgTypeStr, msgSubTypeStr
+		case 59:
+			msgSubTypeStr := "CMESSAGE_START_SCROLL"
+			return msgTypeStr, msgSubTypeStr
+		case 60:
+			msgSubTypeStr := "CMESSAGE_STOP_ACTIONS"
+			return msgTypeStr, msgSubTypeStr
+		case 61:
+			msgSubTypeStr := "CMESSAGE_STOP_FOLLOW"
+			return msgTypeStr, msgSubTypeStr
+		case 62:
+			msgSubTypeStr := "CMESSAGE_TRIGGER_STATUS"
+			return msgTypeStr, msgSubTypeStr
+		case 63:
+			msgSubTypeStr := "CMESSAGE_UNLOCK"
+			return msgTypeStr, msgSubTypeStr
+		case 64:
+			msgSubTypeStr := "CMESSAGE_UPDATE_REACTION"
+			return msgTypeStr, msgSubTypeStr
+		case 65:
+			msgSubTypeStr := "CMESSAGE_VERBAL_CONSTANT"
+			return msgTypeStr, msgSubTypeStr
+		case 66:
+			msgSubTypeStr := "CMESSAGE_VISIBILITY_MAP_MOVE"
+			return msgTypeStr, msgSubTypeStr
+		case 67:
+			msgSubTypeStr := "CMESSAGE_VISUAL_EFFECT"
+			return msgTypeStr, msgSubTypeStr
+		case 68:
+			msgSubTypeStr := "CMESSAGE_SET_DIALOG_RESREF"
+			return msgTypeStr, msgSubTypeStr
+		case 69:
+			msgSubTypeStr := "CMESSAGE_ESCAPE_AREA"
+			return msgTypeStr, msgSubTypeStr
+		case 70:
+			msgSubTypeStr := "CMESSAGE_DISPLAY_TEXTREF_SEND"
+			return msgTypeStr, msgSubTypeStr
+		case 71:
+			msgSubTypeStr := "CMESSAGE_SET_CURRENT_ACTION_ID"
+			return msgTypeStr, msgSubTypeStr
+		case 72:
+			msgSubTypeStr := "CMESSAGE_MOVE_GLOBAL"
+			return msgTypeStr, msgSubTypeStr
+		case 73:
+			msgSubTypeStr := "CMESSAGE_FADE_COLOR"
+			return msgTypeStr, msgSubTypeStr
+		case 74:
+			msgSubTypeStr := "CMESSAGE_START_TEXT_SCREEN"
+			return msgTypeStr, msgSubTypeStr
+		case 75:
+			msgSubTypeStr := "CMESSAGE_SPAWNPT_ACTIVATE"
+			return msgTypeStr, msgSubTypeStr
+		case 76:
+			msgSubTypeStr := "CMESSAGE_SPAWNPT_SPAWN"
+			return msgTypeStr, msgSubTypeStr
+		case 77:
+			msgSubTypeStr := "CMESSAGE_STATIC_START"
+			return msgTypeStr, msgSubTypeStr
+		case 78:
+			msgSubTypeStr := "CMESSAGE_STORE_ADD_ITEM"
+			return msgTypeStr, msgSubTypeStr
+		case 79:
+			msgSubTypeStr := "CMESSAGE_STORE_REMOVE_ITEM"
+			return msgTypeStr, msgSubTypeStr
+		case 80:
+			msgSubTypeStr := "CMESSAGE_FAMILIAR_ADD"
+			return msgTypeStr, msgSubTypeStr
+		case 81:
+			msgSubTypeStr := "CMESSAGE_FAMILIAR_REMOVE_RESREF"
+			return msgTypeStr, msgSubTypeStr
+		case 82:
+			msgSubTypeStr := "CMESSAGE_STOP_ESCAPE_AREA"
+			return msgTypeStr, msgSubTypeStr
+		case 85:
+			msgSubTypeStr := "CMESSAGE_SET_TIME_STOP"
+			return msgTypeStr, msgSubTypeStr
+		case 87:
+			msgSubTypeStr := "CMESSAGE_STORE_RELEASE"
+			return msgTypeStr, msgSubTypeStr
+		case 90:
+			msgSubTypeStr := "CMESSAGE_90"
+			return msgTypeStr, msgSubTypeStr
+		case 91:
+			msgSubTypeStr := "CMESSAGE_FLOAT_TEXT"
+			return msgTypeStr, msgSubTypeStr
+		case 92:
+			msgSubTypeStr := "CMESSAGE_92"
+			return msgTypeStr, msgSubTypeStr
+		case 93:
+			msgSubTypeStr := "CMESSAGE_SET_PROTAGONIST"
+			return msgTypeStr, msgSubTypeStr
+		case 94:
+			msgSubTypeStr := "CMESSAGE_START_COMBAT_MUSIC"
+			return msgTypeStr, msgSubTypeStr
+		case 99:
+			msgSubTypeStr := "CMESSAGE_SCREENSHAKE"
+			return msgTypeStr, msgSubTypeStr
+		case 100:
+			msgSubTypeStr := "CMESSAGE_STORE_DEMAND"
+			return msgTypeStr, msgSubTypeStr
+		case 101:
+			msgSubTypeStr := "CMESSAGE_101"
+			return msgTypeStr, msgSubTypeStr
+		case 102:
+			msgSubTypeStr := "CMESSAGE_WEAPON_IMMUNITIES_UPDATE"
+			return msgTypeStr, msgSubTypeStr
+		case 103:
+			msgSubTypeStr := "CMESSAGE_103"
+			return msgTypeStr, msgSubTypeStr
+		case 106:
+			msgSubTypeStr := "CMESSAGE_TOGGLE_INTERFACE"
+			return msgTypeStr, msgSubTypeStr
+		case 107:
+			msgSubTypeStr := "CMESSAGE_107"
+			return msgTypeStr, msgSubTypeStr
+		case 109:
+			msgSubTypeStr := "CMESSAGE_SET_AREA_TYPE"
+			return msgTypeStr, msgSubTypeStr
+		case 110:
+			msgSubTypeStr := "CMESSAGE_SET_AREA_REST_ENCOUNTER"
+			return msgTypeStr, msgSubTypeStr
+		case 114:
+			msgSubTypeStr := "CMESSAGE_SET_AREA_EXPLORED"
+			return msgTypeStr, msgSubTypeStr
+		case 116:
+			msgSubTypeStr := "CMESSAGE_CHANGE_STAT"
+			return msgTypeStr, msgSubTypeStr
+		case 120:
+			msgSubTypeStr := "CMESSAGE_120"
+			return msgTypeStr, msgSubTypeStr
+		case 121:
+			msgSubTypeStr := "CMESSAGE_END_GAME"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 68:
+		msgTypeStr := "DIALOG"
+		switch msgSubType {
+		case 82:
+			msgSubTypeStr := "DIALOG_PERMIT_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		case 114:
+			msgSubTypeStr := "DIALOG_PERMIT_REPLY"
+			return msgTypeStr, msgSubTypeStr
+		case 67:
+			msgSubTypeStr := "DIALOG_CANCEL_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		case 75:
+			msgSubTypeStr := "DIALOG_KILL_OR_USE"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 73:
+		msgTypeStr := "SWAPITEM"
+		switch msgSubType {
+		case 82:
+			msgSubTypeStr := "SWAPITEM_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		case 114:
+			msgSubTypeStr := "SWAPITEM_REPLY"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 106:
+		msgTypeStr := "JOURNAL"
+		switch msgSubType {
+		case 69:
+			msgSubTypeStr := "JOURNAL_ADD_ENTRY"
+			return msgTypeStr, msgSubTypeStr
+		case 65:
+			msgSubTypeStr := "JOURNAL_ANNOUNCE"
+			return msgTypeStr, msgSubTypeStr
+		case 117:
+			msgSubTypeStr := "JOURNAL_ADD_USER_ENTRY"
+			return msgTypeStr, msgSubTypeStr
+		case 85:
+			msgSubTypeStr := "JOURNAL_ANNOUNCE_USER_ENTRY"
+			return msgTypeStr, msgSubTypeStr
+		case 99:
+			msgSubTypeStr := "JOURNAL_CHANGE_ENTRY"
+			return msgTypeStr, msgSubTypeStr
+		case 67:
+			msgSubTypeStr := "JOURNAL_ANNOUNCE_CHANGE"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 98:
+		msgTypeStr := "BIOGRAPHY"
+		switch msgSubType {
+		case 99:
+			msgSubTypeStr := "BIOGRAPHY_CHANGE"
+			return msgTypeStr, msgSubTypeStr
+		case 67:
+			msgSubTypeStr := "BIOGRAPHY_CHANGE_ANNOUNCE"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 75:
+		msgTypeStr := "KICK_PLAYER"
+		switch msgSubType {
+		case 82:
+			msgSubTypeStr := "KICK_PLAYER_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		case 83:
+			msgSubTypeStr := "KICK_PLAYER_SERVER_SUPPORT"
+			return msgTypeStr, msgSubTypeStr
+		case 72:
+			msgSubTypeStr := "KICK_PLAYER_HOOFED_OUT"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 77:
+		msgTypeStr := "MPSETTINGS"
+		switch msgSubType {
+		case 68:
+			msgSubTypeStr := "MPSETTINGS_FULLDEMAND"
+			return msgTypeStr, msgSubTypeStr
+		case 83:
+			msgSubTypeStr := "MPSETTINGS_FULLSET"
+			return msgTypeStr, msgSubTypeStr
+		case 112:
+			msgSubTypeStr := "MPSETTINGS_PERMISSION"
+			return msgTypeStr, msgSubTypeStr
+		case 121:
+			msgSubTypeStr := "MPSETTINGS_PLAYER_READY"
+			return msgTypeStr, msgSubTypeStr
+		case 114:
+			msgSubTypeStr := "MPSETTINGS_CHAR_READY"
+			return msgTypeStr, msgSubTypeStr
+		case 99:
+			msgSubTypeStr := "MPSETTINGS_CHAR_CONTROL"
+			return msgTypeStr, msgSubTypeStr
+		case 105:
+			msgSubTypeStr := "MPSETTINGS_IMPORTING"
+			return msgTypeStr, msgSubTypeStr
+		case 106:
+			msgSubTypeStr := "MPSETTINGS_LISTEN_JOIN"
+			return msgTypeStr, msgSubTypeStr
+		case 115:
+			msgSubTypeStr := "MPSETTINGS_SLOT_STATUS"
+			return msgTypeStr, msgSubTypeStr
+		case 108:
+			msgSubTypeStr := "MPSETTINGS_LOCK_STATUS"
+			return msgTypeStr, msgSubTypeStr
+		case 97:
+			msgSubTypeStr := "MPSETTINGS_LOCK_ALLOW_INPUT"
+			return msgTypeStr, msgSubTypeStr
+		case 76:
+			msgSubTypeStr := "MPSETTINGS_LOCK_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		case 54:
+			msgSubTypeStr := "MPSETTINGS_GORE_LEVEL"
+			return msgTypeStr, msgSubTypeStr
+		case 57:
+			msgSubTypeStr := "MPSETTINGS_RESTRICT_STORE"
+			return msgTypeStr, msgSubTypeStr
+		case 78:
+			msgSubTypeStr := "MPSETTINGS_NIGHTMAREMODE"
+			return msgTypeStr, msgSubTypeStr
+		case 110:
+			msgSubTypeStr := "MPSETTINGS_DEMAND_NIGHTMAREMODE"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 79:
+		msgTypeStr := "OBJECT"
+		switch msgSubType {
+		case 65:
+			msgSubTypeStr := "OBJECT_ADD"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 80:
+		msgTypeStr := "PLAYERCHAR"
+		switch msgSubType {
+		case 85:
+			msgSubTypeStr := "PLAYERCHAR_UPDATE_DEMAND"
+			return msgTypeStr, msgSubTypeStr
+		case 117:
+			msgSubTypeStr := "PLAYERCHAR_UPDATE_REPLY"
+			return msgTypeStr, msgSubTypeStr
+		case 68:
+			msgSubTypeStr := "PLAYERCHAR_DEMAND_SLOT"
+			return msgTypeStr, msgSubTypeStr
+		case 100:
+			msgSubTypeStr := "PLAYERCHAR_DEMAND_REPLY"
+			return msgTypeStr, msgSubTypeStr
+		case 70:
+			msgSubTypeStr := "PLAYERCHAR_70"
+			return msgTypeStr, msgSubTypeStr
+		case 102:
+			msgSubTypeStr := "PLAYERCHAR_102"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 81:
+		msgTypeStr := "PAUSING"
+		switch msgSubType {
+		case 82:
+			msgSubTypeStr := "PAUSING_PERMIT_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		case 65:
+			msgSubTypeStr := "PAUSING_ANNOUNCE"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 82:
+		msgTypeStr := "RESOURCE"
+		switch msgSubType {
+		case 68:
+			msgSubTypeStr := "RESOURCE_DEMAND"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 83:
+		msgTypeStr := "SIGNAL"
+		switch msgSubType {
+		case 83:
+			msgSubTypeStr := "SIGNAL"
+			return msgTypeStr, msgSubTypeStr
+		case 82:
+			msgSubTypeStr := "SIGNAL_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 115:
+		msgTypeStr := "MPSYNCH"
+		switch msgSubType {
+		case 82:
+			msgSubTypeStr := "MPSYNCH_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		case 80:
+			msgSubTypeStr := "MPSYNCH_REPLY"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 86:
+		msgTypeStr := "VERSION"
+		switch msgSubType {
+		case 115:
+			msgSubTypeStr := "VERSION_SERVER"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 88:
+		msgTypeStr := "LEAVEAREALUA"
+		switch msgSubType {
+		case 82:
+			msgSubTypeStr := "LEAVEAREALUA_PERMIT_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		}
+	case 120:
+		msgTypeStr := "LEAVEAREANAME"
+		switch msgSubType {
+		case 82:
+			msgSubTypeStr := "LEAVEAREANAME_PERMIT_REQUEST"
+			return msgTypeStr, msgSubTypeStr
+		}
+	}
+	return "UNKNOWN", "UNKNOWN"
 }
