@@ -236,7 +236,7 @@ type JMSpecCompressed struct {
 }
 
 func (jmSpecCompressed JMSpecCompressed) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: 0x%x SpecMsgSubtype: 0x%x DecompressedSize: 0x%x", jmSpecCompressed.PlayerIDFrom, jmSpecCompressed.PlayerIDTo, jmSpecCompressed.FrameKind_, jmSpecCompressed.FrameNum, jmSpecCompressed.FrameExpected, jmSpecCompressed.Compressed, jmSpecCompressed.CRC32, jmSpecCompressed.JM[0], jmSpecCompressed.JM[1], jmSpecCompressed.Unknown1, jmSpecCompressed.Unknown2, jmSpecCompressed.PacketLen, jmSpecCompressed.SpecMsgFlag, jmSpecCompressed.SpecMsgType, jmSpecCompressed.SpecMsgSubtype, jmSpecCompressed.DecompressedSize_)
+	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: %d SpecMsgSubtype: %d DecompressedSize: 0x%x", jmSpecCompressed.PlayerIDFrom, jmSpecCompressed.PlayerIDTo, jmSpecCompressed.FrameKind_, jmSpecCompressed.FrameNum, jmSpecCompressed.FrameExpected, jmSpecCompressed.Compressed, jmSpecCompressed.CRC32, jmSpecCompressed.JM[0], jmSpecCompressed.JM[1], jmSpecCompressed.Unknown1, jmSpecCompressed.Unknown2, jmSpecCompressed.PacketLen, jmSpecCompressed.SpecMsgFlag, jmSpecCompressed.SpecMsgType, jmSpecCompressed.SpecMsgSubtype, jmSpecCompressed.DecompressedSize_)
 }
 
 func (jmSpecCompressed JMSpecCompressed) FromPlayerID() uint32 {
@@ -304,7 +304,7 @@ type JMSpec struct {
 }
 
 func (jmSpec JMSpec) String() string {
-	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: 0x%x SpecMsgSubtype: 0x%x", jmSpec.PlayerIDFrom, jmSpec.PlayerIDTo, jmSpec.FrameKind_, jmSpec.FrameNum, jmSpec.FrameExpected, jmSpec.Compressed, jmSpec.CRC32, jmSpec.JM[0], jmSpec.JM[1], jmSpec.Unknown1, jmSpec.Unknown2, jmSpec.PacketLen, jmSpec.SpecMsgFlag, jmSpec.SpecMsgType, jmSpec.SpecMsgSubtype)
+	return fmt.Sprintf("IEHead PlayerFrom: 0x%x PlayerTo: 0x%x FrameKind: 0x%x FrameNumber: 0x%x FrameExpected: 0x%x Compressed?: 0x%x CRC32: 0x%x - %c%c Unk1: 0x%x Unk2: 0x%x Len: %d SpecMsgFlag: 0x%x SpecMsgType: %d SpecMsgSubtype: %d", jmSpec.PlayerIDFrom, jmSpec.PlayerIDTo, jmSpec.FrameKind_, jmSpec.FrameNum, jmSpec.FrameExpected, jmSpec.Compressed, jmSpec.CRC32, jmSpec.JM[0], jmSpec.JM[1], jmSpec.Unknown1, jmSpec.Unknown2, jmSpec.PacketLen, jmSpec.SpecMsgFlag, jmSpec.SpecMsgType, jmSpec.SpecMsgSubtype)
 }
 
 func (jmSpec JMSpec) FromPlayerID() uint32 {
@@ -497,46 +497,46 @@ func (iemsg IEMsgPacket) Serialize() ([]byte, error) {
 	return serialbuf, nil
 }
 
-const IE_SPEC_MSG_TYPE_INTRO uint8 = 0x56
-const IE_SPEC_MSG_SUBTYPE_INTRO uint8 = 0x73
+const IE_SPEC_MSG_TYPE_VERSION uint8 = 86
+const IE_SPEC_MSG_SUBTYPE_VERSION_SERVER uint8 = 115
 
-type IEIntroHeader struct {
+type IEVersionHeader struct {
 	// JMHeader
-	Unknown3         uint8 // 03
+	NumFields        uint8 // 03
 	VersionStringLen uint8
 }
 
-const IEIntroHeaderSize int = 2
+const IEVersionHeaderSize int = 2
 
-type IEIntro struct {
-	IEIntroHeader
+type IEVersion struct {
+	IEVersionHeader
 	VersionString string
-	IEIntroFooter
+	IEVersionFooter
 }
 
-func (ieIntro IEIntro) String() string {
-	return fmt.Sprintf("Client Version: %s Unk3: 0x%x - VersionStrLen: 0x%x - Unk4: 0x%x", ieIntro.VersionString, ieIntro.Unknown3, ieIntro.VersionStringLen, ieIntro.Unknown4)
+func (ieVersion IEVersion) String() string {
+	return fmt.Sprintf("Client Version: %s NumFields: 0x%x - VersionStrLen: 0x%x - Expansion: 0x%x TimerUpdatesPerSecond: %d", ieVersion.VersionString, ieVersion.NumFields, ieVersion.VersionStringLen, ieVersion.ExpansionPack, ieVersion.TimerUpdatesPerSecond)
 }
 
-type IEIntroFooter struct {
-	VersionStringNull uint8  // 00
-	Unknown4          uint32 // 1e000000
+type IEVersionFooter struct {
+	ExpansionPack         uint8
+	TimerUpdatesPerSecond uint32 // 1e000000
 }
 
-const IEIntroFooterSize int = 5
+const IEVersionFooterSize int = 5
 
-const IE_SPEC_MSG_TYPE_CHAR_ARBITRATION uint8 = 0x4d
-const IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY uint8 = 0x72
+const IE_SPEC_MSG_TYPE_MPSETTINGS uint8 = 77
+const IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY uint8 = 114
 
-type IECharArbToggleCharReady struct {
+type IEMPSettingsToggleCharReady struct {
 	// JMSpec
 	CharacterNum uint8
 	ReadyStatus  uint32
 }
 
-const IECharArbToggleCharReadySize int = 5
+const IEMPSettingsToggleCharReadySize int = 5
 
-func (charReady IECharArbToggleCharReady) String() string {
+func (charReady IEMPSettingsToggleCharReady) String() string {
 	if charReady.ReadyStatus == 0 {
 		return "Character " + strconv.Itoa(int(charReady.CharacterNum)) + " is not ready."
 	} else if charReady.ReadyStatus == 1 {
@@ -545,9 +545,9 @@ func (charReady IECharArbToggleCharReady) String() string {
 	return "Character " + strconv.Itoa(int(charReady.CharacterNum)) + " is ready (" + strconv.Itoa(int(charReady.ReadyStatus)) + ")."
 }
 
-const IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO uint8 = 0x53
+const IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO uint8 = 83
 
-type IECharArbServerStatus struct {
+type IEMPSettingsFullSet struct {
 	Unknown1                    [2]byte
 	DefaultPermBuyAndSell       uint8
 	DefaultPermTravel           uint8
@@ -577,9 +577,9 @@ type IECharArbServerStatus struct {
 	Unknown5                    [29]byte
 }
 
-const IECharArbServerStatusSize int = 199
+const IEMPSettingsFullSetSize int = 199
 
-func (charArbServStatus IECharArbServerStatus) String() string {
+func (charArbServStatus IEMPSettingsFullSet) String() string {
 	ret := "Unk1: " + hex.EncodeToString(charArbServStatus.Unknown1[:])
 
 	ret += "\nDefaultPerms:"
