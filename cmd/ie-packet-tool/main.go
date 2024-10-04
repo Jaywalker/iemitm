@@ -100,7 +100,7 @@ func processPacket(packet interprocess.PacketData) (forward bool) {
 	if packet.Size == 36 { // Pre-Name, Post-Auth Ping
 		fmt.Fprintln(rl, "DPlay Ping/Pong")
 		return forwardDplayPings
-	} else if packet.Size == ie.IEHeaderSize && (header.FrameKind_ == 1 || header.FrameKind == 2) { // Ping! Apparently pings can be frameKind 1 or 2?
+	} else if packet.Size == ie.IEHeaderSize && (header.FrameKind_ == 1 || header.FrameKind_ == 2) { // Ping! Apparently pings can be frameKind 1 or 2?
 		/*
 			DEBUG: FULL: Server => ClientIEHead PlayerFrom: 0x1000000 PlayerTo: 0xad4f6f00 FrameKind: 0x2 FrameNumber: 0x0 FrameExpected: 0xc88 Compressed?: 0x0 CRC32: 0x31b62cfc - 01000000ad4f6f000200000c880031b62cfc
 			ERROR: JMSpecHeaderSize > size
