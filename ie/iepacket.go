@@ -9,12 +9,6 @@ import (
 	"strconv"
 )
 
-func specMsgSubtypeToString(msgSubType uint8) string {
-	switch msgSubType {
-	}
-	return "UNKNOWN"
-}
-
 type IEHeader struct {
 	PlayerIDFrom  uint32
 	PlayerIDTo    uint32 //Server seems to be 0001 //

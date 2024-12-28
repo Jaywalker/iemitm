@@ -34,6 +34,8 @@ var serverFrameNumber uint16
 var clientExpectedFrameNumber uint16
 var serverExpectedFrameNumber uint16
 
+var filterType, filterSubType int
+
 var crcChecker *crc.CRC
 
 var sendBuf []byte
@@ -140,6 +142,7 @@ var completer = readline.NewPrefixCompleter(
 		readline.PcItem("enable"),
 		readline.PcItem("disable"),
 	),
+	readline.PcItem("filter"),
 	readline.PcItem("debug"),
 	readline.PcItem("exit"),
 	readline.PcItem("quit"),
@@ -167,6 +170,8 @@ func main() {
 	serverFrameNumber = 0
 	clientExpectedFrameNumber = 0
 	serverExpectedFrameNumber = 0
+	filterType = 0
+	filterSubType = 0
 
 	var err error
 	rl, err = readline.NewEx(&readline.Config{
@@ -260,6 +265,31 @@ func main() {
 				fmt.Fprintln(rl, "Sending to client")
 			} else {
 				fmt.Fprintln(rl, "Invalid target. Valid targets are: client server")
+			}
+		case strings.HasPrefix(line, "filter "):
+			if line == "filter clear" {
+				filterType = 0
+				filterSubType = 0
+			} else {
+				args := strings.Split(line, " ")
+				if len(args) != 3 {
+					fmt.Fprintln(rl, "Usage: filter TYPE SUBTYPE")
+				} else {
+					filterType, err = strconv.Atoi(args[1])
+					if err != nil {
+						filterType = 0
+						filterSubType = 0
+						fmt.Fprintln(rl, "Error: TYPE must be numeric")
+					} else {
+						filterSubType, err = strconv.Atoi(args[2])
+						if err != nil {
+							filterType = 0
+							filterSubType = 0
+							fmt.Fprintln(rl, "Error: SUBTYPE must be numeric")
+						}
+
+					}
+				}
 			}
 		case strings.HasPrefix(line, "sendmsg "):
 			if strings.HasPrefix(line[8:], "server") {

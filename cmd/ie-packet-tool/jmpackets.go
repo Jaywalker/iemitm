@@ -80,7 +80,9 @@ func processJMPacket(packet interprocess.PacketData, header ie.IEHeader) (forwar
 				fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, ": ", jmPacket.String(), " - ", hex.EncodeToString(decompressed))
 			}
 		default:
-			fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, ": ", jmPacket.String()+" - ", hex.EncodeToString(decompressed))
+			if filterType == 0 || (filterType == int(jmPacket.SpecType()) && filterSubType == int(jmPacket.SpecSubType())) {
+				fmt.Fprintln(rl, "Unknown JM Spec Msg Type: ", packet.Source, " => ", packet.Dest, ": ", jmPacket.String()+" - ", hex.EncodeToString(decompressed))
+			}
 		}
 	} else {
 		printDebug("Not a Spec Message! 0x%x", packet.Data[ie.JMHeaderSize:ie.JMHeaderSize+1])
