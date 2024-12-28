@@ -40,12 +40,19 @@ func processJMPacket(packet interprocess.PacketData, header ie.IEHeader) (forwar
 		case ie.IE_SPEC_MSG_TYPE_MPSETTINGS:
 			switch jmPacket.SpecSubType() {
 			case ie.IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO:
-				var servStatus ie.IEMPSettingsFullSet
-				if err := binary.Read(bytes.NewReader(decompressed), binary.BigEndian, &servStatus); err != nil {
+				var servStatusPreString ie.IEMPSettingsFullSetPreString
+				if err := binary.Read(bytes.NewReader(decompressed[:ie.IEMPSettingsFullSetPreStringSize]), binary.BigEndian, &servStatusPreString); err != nil {
 					fmt.Fprintln(rl, "binary.Read failed:", err)
 					fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, ": ", jmPacket.String()+" - ", hex.EncodeToString(decompressed))
 				} else {
-					fmt.Fprintln(rl, servStatus.String())
+					var servStatusPostString ie.IEMPSettingFullSetPostString
+					if err := binary.Read(bytes.NewReader(decompressed[ie.IEMPSettingsFullSetPreStringSize+int(servStatusPreString.AreaNameLength):]), binary.BigEndian, &servStatusPostString); err != nil {
+						fmt.Fprintln(rl, "binary.Read failed:", err)
+						fmt.Fprintln(rl, packet.Source, " => ", packet.Dest, ": ", jmPacket.String()+" - ", hex.EncodeToString(decompressed))
+					} else {
+						servStatus := ie.IEMPSettingsFullSet{servStatusPreString, string(decompressed[ie.IEMPSettingsFullSetPreStringSize : ie.IEMPSettingsFullSetPreStringSize+int(servStatusPreString.AreaNameLength)]), servStatusPostString}
+						fmt.Fprintln(rl, servStatus.String())
+					}
 				}
 			case ie.IE_SPEC_MSG_SUBTYPE_TOGGLE_CHAR_READY:
 				var charReady ie.IEMPSettingsToggleCharReady

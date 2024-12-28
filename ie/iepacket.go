@@ -3,7 +3,6 @@ package ie
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
@@ -550,8 +549,9 @@ func (charReady IEMPSettingsToggleCharReady) String() string {
 
 const IE_SPEC_MSG_SUBTYPE_UPDATE_SERVER_ARBITRATION_INFO uint8 = 83
 
-type IEMPSettingsFullSet struct {
-	Unknown1                    [2]byte
+type IEMPSettingsFullSetPreString struct {
+	ArbitrationLockStatus       uint8
+	ArbitrationLockAllowInput   uint8
 	DefaultPermBuyAndSell       uint8
 	DefaultPermTravel           uint8
 	DefaultPermDialog           uint8
@@ -560,7 +560,17 @@ type IEMPSettingsFullSet struct {
 	DefaultPermHasBeenLeaderIsh uint8
 	DefaultPermLeader           uint8
 	DefaultPermModifyCharacters uint8
-	Unknown2                    [20]byte
+	Player0ID                   uint32
+	Player0PermBuyAndSell       uint8
+	Player0PermTravel           uint8
+	Player0PermDialog           uint8
+	Player0PermViewCharacters   uint8
+	Player0PermPause            uint8
+	Player0PermHasBeenLeaderIsh uint8
+	Player0PermLeader           uint8
+	Player0PermModifyCharacters uint8
+	Player0Ready                uint32
+	Unknown2                    uint32
 	Player1ID                   uint32
 	Player1PermBuyAndSell       uint8
 	Player1PermTravel           uint8
@@ -570,20 +580,102 @@ type IEMPSettingsFullSet struct {
 	Player1PermHasBeenLeaderIsh uint8
 	Player1PermLeader           uint8
 	Player1PermModifyCharacters uint8
-	Unknown3                    [89]byte
+	Player1Ready                uint32
+	Unknown3                    uint32
+	Player2ID                   uint32
+	Player2PermBuyAndSell       uint8
+	Player2PermTravel           uint8
+	Player2PermDialog           uint8
+	Player2PermViewCharacters   uint8
+	Player2PermPause            uint8
+	Player2PermHasBeenLeaderIsh uint8
+	Player2PermLeader           uint8
+	Player2PermModifyCharacters uint8
+	Player2Ready                uint32
+	Unknown4                    uint32
+	Player3ID                   uint32
+	Player3PermBuyAndSell       uint8
+	Player3PermTravel           uint8
+	Player3PermDialog           uint8
+	Player3PermViewCharacters   uint8
+	Player3PermPause            uint8
+	Player3PermHasBeenLeaderIsh uint8
+	Player3PermLeader           uint8
+	Player3PermModifyCharacters uint8
+	Player3Ready                uint32
+	Unknown5                    uint32
+	Player4ID                   uint32
+	Player4PermBuyAndSell       uint8
+	Player4PermTravel           uint8
+	Player4PermDialog           uint8
+	Player4PermViewCharacters   uint8
+	Player4PermPause            uint8
+	Player4PermHasBeenLeaderIsh uint8
+	Player4PermLeader           uint8
+	Player4PermModifyCharacters uint8
+	Player4Ready                uint32
+	Unknown6                    uint32
+	Player5ID                   uint32
+	Player5PermBuyAndSell       uint8
+	Player5PermTravel           uint8
+	Player5PermDialog           uint8
+	Player5PermViewCharacters   uint8
+	Player5PermPause            uint8
+	Player5PermHasBeenLeaderIsh uint8
+	Player5PermLeader           uint8
+	Player5PermModifyCharacters uint8
+	Player5Ready                uint32
+	Unknown7                    uint32
+	RefreshCharacters           uint8
 	CharIsReady                 [6]uint8
-	Unknown4                    [6]byte
+	SlotHasChar                 [6]uint8
 	CharOwnerPlayerID           [6]uint32
 	ImportCharSettings          uint8
 	RestrictStores              uint8
 	ListenToJoinRequests        uint8
-	Unknown5                    [29]byte
+	AreaStartX                  uint32
+	AreaStartY                  uint32
+	Gore                        uint32
+	GoreOption                  uint32
+	// Unknown10                   [13]byte
+	Unknown9       uint32
+	AreaNameLength uint8
 }
 
-const IEMPSettingsFullSetSize int = 199
+type IEMPSettingFullSetPostString struct {
+	Unknown10 uint8
+	Unknown11 uint8
+}
+
+type IEMPSettingsFullSet struct {
+	IEMPSettingsFullSetPreString
+	AreaName string
+	IEMPSettingFullSetPostString
+}
+
+const IEMPSettingsFullSetPreStringSize int = 191
+const IEMPSettingsFullSetPostStringSize int = 2
+
+// const IEMPSettingsFullSetSize int = 199
 
 func (charArbServStatus IEMPSettingsFullSet) String() string {
-	ret := "Unk1: " + hex.EncodeToString(charArbServStatus.Unknown1[:])
+	ret := "ArbitrationLockStatus: "
+	if charArbServStatus.ArbitrationLockStatus == 0 {
+		ret += "false"
+	} else if charArbServStatus.ArbitrationLockStatus == 1 {
+		ret += "true"
+	} else {
+		ret += fmt.Sprintf("true? 0x%x", charArbServStatus.ArbitrationLockStatus)
+	}
+
+	ret += "\nArbitrationLockAllowInput: "
+	if charArbServStatus.ArbitrationLockAllowInput == 0 {
+		ret += "false"
+	} else if charArbServStatus.ArbitrationLockAllowInput == 1 {
+		ret += "true"
+	} else {
+		ret += fmt.Sprintf("true? 0x%x", charArbServStatus.ArbitrationLockAllowInput)
+	}
 
 	ret += "\nDefaultPerms:"
 
@@ -628,11 +720,11 @@ func (charArbServStatus IEMPSettingsFullSet) String() string {
 	}
 
 	if charArbServStatus.DefaultPermHasBeenLeaderIsh == 0 {
-		ret += "\n\tMaybe 'HasBeenLeader': no"
+		ret += "\n\tGROUP_POOL: no"
 	} else if charArbServStatus.DefaultPermHasBeenLeaderIsh == 1 {
-		ret += "\n\tMaybe 'HasBeenLeader': yes"
+		ret += "\n\tGROUP_POOL: yes"
 	} else {
-		ret += fmt.Sprintf("\n\tMaybe 'HasBeenLeader': yes? 0x%x", charArbServStatus.DefaultPermHasBeenLeaderIsh)
+		ret += fmt.Sprintf("\n\tGROUP_POOL: yes? 0x%x", charArbServStatus.DefaultPermHasBeenLeaderIsh)
 	}
 
 	if charArbServStatus.DefaultPermLeader == 0 {
@@ -651,7 +743,75 @@ func (charArbServStatus IEMPSettingsFullSet) String() string {
 		ret += fmt.Sprintf("\n\tModify Characters: yes? 0x%x", charArbServStatus.DefaultPermModifyCharacters)
 	}
 
-	ret += "\nUnk2: " + hex.EncodeToString(charArbServStatus.Unknown2[:])
+	ret += fmt.Sprintf("\nPlayer0Perms (0x%x):", charArbServStatus.Player0ID)
+
+	if charArbServStatus.Player0PermBuyAndSell == 0 {
+		ret += "\n\tBuyAndSell: no"
+	} else if charArbServStatus.Player0PermBuyAndSell == 1 {
+		ret += "\n\tBuyAndSell: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tBuyAndSell: yes? 0x%x", charArbServStatus.Player0PermBuyAndSell)
+	}
+
+	if charArbServStatus.Player0PermTravel == 0 {
+		ret += "\n\tTravel: no"
+	} else if charArbServStatus.Player0PermTravel == 1 {
+		ret += "\n\tTravel: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tTravel: yes? 0x%x", charArbServStatus.Player0PermTravel)
+	}
+
+	if charArbServStatus.Player0PermDialog == 0 {
+		ret += "\n\tDialog: no"
+	} else if charArbServStatus.Player0PermDialog == 1 {
+		ret += "\n\tDialog: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tDialog: yes? 0x%x", charArbServStatus.Player0PermDialog)
+	}
+
+	if charArbServStatus.Player0PermViewCharacters == 0 {
+		ret += "\n\tView Characters: no"
+	} else if charArbServStatus.Player0PermViewCharacters == 1 {
+		ret += "\n\tView Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tView Characters: yes? 0x%x", charArbServStatus.Player0PermViewCharacters)
+	}
+
+	if charArbServStatus.Player0PermPause == 0 {
+		ret += "\n\tPause: no"
+	} else if charArbServStatus.Player0PermPause == 1 {
+		ret += "\n\tPause: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tPause: yes? 0x%x", charArbServStatus.Player0PermPause)
+	}
+
+	if charArbServStatus.Player0PermHasBeenLeaderIsh == 0 {
+		ret += "\n\tMaybe 'HasBeenLeader': no"
+	} else if charArbServStatus.Player0PermHasBeenLeaderIsh == 1 {
+		ret += "\n\tMaybe 'HasBeenLeader': yes"
+	} else {
+		ret += fmt.Sprintf("\n\tMaybe 'HasBeenLeader': yes? 0x%x", charArbServStatus.Player0PermHasBeenLeaderIsh)
+	}
+
+	if charArbServStatus.Player0PermLeader == 0 {
+		ret += "\n\tLeader: no"
+	} else if charArbServStatus.Player0PermLeader == 1 {
+		ret += "\n\tLeader: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tLeader: yes? 0x%x", charArbServStatus.Player0PermLeader)
+	}
+
+	if charArbServStatus.Player0PermModifyCharacters == 0 {
+		ret += "\n\tModify Characters: no"
+	} else if charArbServStatus.Player0PermModifyCharacters == 1 {
+		ret += "\n\tModify Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tModify Characters: yes? 0x%x", charArbServStatus.Player0PermModifyCharacters)
+	}
+
+	ret += fmt.Sprintf("\nPlayer0Ready: 0x%x", charArbServStatus.Player0Ready)
+
+	ret += fmt.Sprintf("\nUnk2 (cNetwork.field_772): 0x%x", charArbServStatus.Unknown2)
 
 	ret += fmt.Sprintf("\nPlayer1Perms (0x%x):", charArbServStatus.Player1ID)
 
@@ -719,7 +879,297 @@ func (charArbServStatus IEMPSettingsFullSet) String() string {
 		ret += fmt.Sprintf("\n\tModify Characters: yes? 0x%x", charArbServStatus.Player1PermModifyCharacters)
 	}
 
-	ret += "\nUnk3: " + hex.EncodeToString(charArbServStatus.Unknown3[:])
+	ret += fmt.Sprintf("\nPlayer1Ready: 0x%x", charArbServStatus.Player1Ready)
+
+	ret += fmt.Sprintf("\nUnk3 (cNetwork.field_772): 0x%x", charArbServStatus.Unknown3)
+
+	ret += fmt.Sprintf("\nPlayer2Perms (0x%x):", charArbServStatus.Player2ID)
+
+	if charArbServStatus.Player2PermBuyAndSell == 0 {
+		ret += "\n\tBuyAndSell: no"
+	} else if charArbServStatus.Player2PermBuyAndSell == 1 {
+		ret += "\n\tBuyAndSell: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tBuyAndSell: yes? 0x%x", charArbServStatus.Player2PermBuyAndSell)
+	}
+
+	if charArbServStatus.Player2PermTravel == 0 {
+		ret += "\n\tTravel: no"
+	} else if charArbServStatus.Player2PermTravel == 1 {
+		ret += "\n\tTravel: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tTravel: yes? 0x%x", charArbServStatus.Player2PermTravel)
+	}
+
+	if charArbServStatus.Player2PermDialog == 0 {
+		ret += "\n\tDialog: no"
+	} else if charArbServStatus.Player2PermDialog == 1 {
+		ret += "\n\tDialog: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tDialog: yes? 0x%x", charArbServStatus.Player2PermDialog)
+	}
+
+	if charArbServStatus.Player2PermViewCharacters == 0 {
+		ret += "\n\tView Characters: no"
+	} else if charArbServStatus.Player2PermViewCharacters == 1 {
+		ret += "\n\tView Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tView Characters: yes? 0x%x", charArbServStatus.Player2PermViewCharacters)
+	}
+
+	if charArbServStatus.Player2PermPause == 0 {
+		ret += "\n\tPause: no"
+	} else if charArbServStatus.Player2PermPause == 1 {
+		ret += "\n\tPause: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tPause: yes? 0x%x", charArbServStatus.Player2PermPause)
+	}
+
+	if charArbServStatus.Player2PermHasBeenLeaderIsh == 0 {
+		ret += "\n\tMaybe 'HasBeenLeader': no"
+	} else if charArbServStatus.Player2PermHasBeenLeaderIsh == 1 {
+		ret += "\n\tMaybe 'HasBeenLeader': yes"
+	} else {
+		ret += fmt.Sprintf("\n\tMaybe 'HasBeenLeader': yes? 0x%x", charArbServStatus.Player2PermHasBeenLeaderIsh)
+	}
+
+	if charArbServStatus.Player2PermLeader == 0 {
+		ret += "\n\tLeader: no"
+	} else if charArbServStatus.Player2PermLeader == 1 {
+		ret += "\n\tLeader: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tLeader: yes? 0x%x", charArbServStatus.Player2PermLeader)
+	}
+
+	if charArbServStatus.Player2PermModifyCharacters == 0 {
+		ret += "\n\tModify Characters: no"
+	} else if charArbServStatus.Player2PermModifyCharacters == 1 {
+		ret += "\n\tModify Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tModify Characters: yes? 0x%x", charArbServStatus.Player2PermModifyCharacters)
+	}
+
+	ret += fmt.Sprintf("\nPlayer2Ready: 0x%x", charArbServStatus.Player2Ready)
+
+	ret += fmt.Sprintf("\nUnk4 (cNetwork.field_772): 0x%x", charArbServStatus.Unknown4)
+
+	ret += fmt.Sprintf("\nPlayer3Perms (0x%x):", charArbServStatus.Player3ID)
+
+	if charArbServStatus.Player3PermBuyAndSell == 0 {
+		ret += "\n\tBuyAndSell: no"
+	} else if charArbServStatus.Player3PermBuyAndSell == 1 {
+		ret += "\n\tBuyAndSell: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tBuyAndSell: yes? 0x%x", charArbServStatus.Player3PermBuyAndSell)
+	}
+
+	if charArbServStatus.Player3PermTravel == 0 {
+		ret += "\n\tTravel: no"
+	} else if charArbServStatus.Player3PermTravel == 1 {
+		ret += "\n\tTravel: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tTravel: yes? 0x%x", charArbServStatus.Player3PermTravel)
+	}
+
+	if charArbServStatus.Player3PermDialog == 0 {
+		ret += "\n\tDialog: no"
+	} else if charArbServStatus.Player3PermDialog == 1 {
+		ret += "\n\tDialog: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tDialog: yes? 0x%x", charArbServStatus.Player3PermDialog)
+	}
+
+	if charArbServStatus.Player3PermViewCharacters == 0 {
+		ret += "\n\tView Characters: no"
+	} else if charArbServStatus.Player3PermViewCharacters == 1 {
+		ret += "\n\tView Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tView Characters: yes? 0x%x", charArbServStatus.Player3PermViewCharacters)
+	}
+
+	if charArbServStatus.Player3PermPause == 0 {
+		ret += "\n\tPause: no"
+	} else if charArbServStatus.Player3PermPause == 1 {
+		ret += "\n\tPause: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tPause: yes? 0x%x", charArbServStatus.Player3PermPause)
+	}
+
+	if charArbServStatus.Player3PermHasBeenLeaderIsh == 0 {
+		ret += "\n\tMaybe 'HasBeenLeader': no"
+	} else if charArbServStatus.Player3PermHasBeenLeaderIsh == 1 {
+		ret += "\n\tMaybe 'HasBeenLeader': yes"
+	} else {
+		ret += fmt.Sprintf("\n\tMaybe 'HasBeenLeader': yes? 0x%x", charArbServStatus.Player3PermHasBeenLeaderIsh)
+	}
+
+	if charArbServStatus.Player3PermLeader == 0 {
+		ret += "\n\tLeader: no"
+	} else if charArbServStatus.Player3PermLeader == 1 {
+		ret += "\n\tLeader: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tLeader: yes? 0x%x", charArbServStatus.Player3PermLeader)
+	}
+
+	if charArbServStatus.Player3PermModifyCharacters == 0 {
+		ret += "\n\tModify Characters: no"
+	} else if charArbServStatus.Player3PermModifyCharacters == 1 {
+		ret += "\n\tModify Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tModify Characters: yes? 0x%x", charArbServStatus.Player3PermModifyCharacters)
+	}
+
+	ret += fmt.Sprintf("\nPlayer3Ready: 0x%x", charArbServStatus.Player3Ready)
+
+	ret += fmt.Sprintf("\nUnk5 (cNetwork.field_772): 0x%x", charArbServStatus.Unknown5)
+
+	ret += fmt.Sprintf("\nPlayer4Perms (0x%x):", charArbServStatus.Player4ID)
+
+	if charArbServStatus.Player4PermBuyAndSell == 0 {
+		ret += "\n\tBuyAndSell: no"
+	} else if charArbServStatus.Player4PermBuyAndSell == 1 {
+		ret += "\n\tBuyAndSell: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tBuyAndSell: yes? 0x%x", charArbServStatus.Player4PermBuyAndSell)
+	}
+
+	if charArbServStatus.Player4PermTravel == 0 {
+		ret += "\n\tTravel: no"
+	} else if charArbServStatus.Player4PermTravel == 1 {
+		ret += "\n\tTravel: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tTravel: yes? 0x%x", charArbServStatus.Player4PermTravel)
+	}
+
+	if charArbServStatus.Player4PermDialog == 0 {
+		ret += "\n\tDialog: no"
+	} else if charArbServStatus.Player4PermDialog == 1 {
+		ret += "\n\tDialog: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tDialog: yes? 0x%x", charArbServStatus.Player4PermDialog)
+	}
+
+	if charArbServStatus.Player4PermViewCharacters == 0 {
+		ret += "\n\tView Characters: no"
+	} else if charArbServStatus.Player4PermViewCharacters == 1 {
+		ret += "\n\tView Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tView Characters: yes? 0x%x", charArbServStatus.Player4PermViewCharacters)
+	}
+
+	if charArbServStatus.Player4PermPause == 0 {
+		ret += "\n\tPause: no"
+	} else if charArbServStatus.Player4PermPause == 1 {
+		ret += "\n\tPause: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tPause: yes? 0x%x", charArbServStatus.Player4PermPause)
+	}
+
+	if charArbServStatus.Player4PermHasBeenLeaderIsh == 0 {
+		ret += "\n\tMaybe 'HasBeenLeader': no"
+	} else if charArbServStatus.Player4PermHasBeenLeaderIsh == 1 {
+		ret += "\n\tMaybe 'HasBeenLeader': yes"
+	} else {
+		ret += fmt.Sprintf("\n\tMaybe 'HasBeenLeader': yes? 0x%x", charArbServStatus.Player4PermHasBeenLeaderIsh)
+	}
+
+	if charArbServStatus.Player4PermLeader == 0 {
+		ret += "\n\tLeader: no"
+	} else if charArbServStatus.Player4PermLeader == 1 {
+		ret += "\n\tLeader: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tLeader: yes? 0x%x", charArbServStatus.Player4PermLeader)
+	}
+
+	if charArbServStatus.Player4PermModifyCharacters == 0 {
+		ret += "\n\tModify Characters: no"
+	} else if charArbServStatus.Player4PermModifyCharacters == 1 {
+		ret += "\n\tModify Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tModify Characters: yes? 0x%x", charArbServStatus.Player4PermModifyCharacters)
+	}
+
+	ret += fmt.Sprintf("\nPlayer4Ready: 0x%x", charArbServStatus.Player4Ready)
+
+	ret += fmt.Sprintf("\nUnk6 (cNetwork.field_772): 0x%x", charArbServStatus.Unknown6)
+
+	ret += fmt.Sprintf("\nPlayer5Perms (0x%x):", charArbServStatus.Player5ID)
+
+	if charArbServStatus.Player5PermBuyAndSell == 0 {
+		ret += "\n\tBuyAndSell: no"
+	} else if charArbServStatus.Player5PermBuyAndSell == 1 {
+		ret += "\n\tBuyAndSell: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tBuyAndSell: yes? 0x%x", charArbServStatus.Player5PermBuyAndSell)
+	}
+
+	if charArbServStatus.Player5PermTravel == 0 {
+		ret += "\n\tTravel: no"
+	} else if charArbServStatus.Player5PermTravel == 1 {
+		ret += "\n\tTravel: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tTravel: yes? 0x%x", charArbServStatus.Player5PermTravel)
+	}
+
+	if charArbServStatus.Player5PermDialog == 0 {
+		ret += "\n\tDialog: no"
+	} else if charArbServStatus.Player5PermDialog == 1 {
+		ret += "\n\tDialog: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tDialog: yes? 0x%x", charArbServStatus.Player5PermDialog)
+	}
+
+	if charArbServStatus.Player5PermViewCharacters == 0 {
+		ret += "\n\tView Characters: no"
+	} else if charArbServStatus.Player5PermViewCharacters == 1 {
+		ret += "\n\tView Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tView Characters: yes? 0x%x", charArbServStatus.Player5PermViewCharacters)
+	}
+
+	if charArbServStatus.Player5PermPause == 0 {
+		ret += "\n\tPause: no"
+	} else if charArbServStatus.Player5PermPause == 1 {
+		ret += "\n\tPause: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tPause: yes? 0x%x", charArbServStatus.Player5PermPause)
+	}
+
+	if charArbServStatus.Player5PermHasBeenLeaderIsh == 0 {
+		ret += "\n\tMaybe 'HasBeenLeader': no"
+	} else if charArbServStatus.Player5PermHasBeenLeaderIsh == 1 {
+		ret += "\n\tMaybe 'HasBeenLeader': yes"
+	} else {
+		ret += fmt.Sprintf("\n\tMaybe 'HasBeenLeader': yes? 0x%x", charArbServStatus.Player5PermHasBeenLeaderIsh)
+	}
+
+	if charArbServStatus.Player5PermLeader == 0 {
+		ret += "\n\tLeader: no"
+	} else if charArbServStatus.Player5PermLeader == 1 {
+		ret += "\n\tLeader: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tLeader: yes? 0x%x", charArbServStatus.Player5PermLeader)
+	}
+
+	if charArbServStatus.Player5PermModifyCharacters == 0 {
+		ret += "\n\tModify Characters: no"
+	} else if charArbServStatus.Player5PermModifyCharacters == 1 {
+		ret += "\n\tModify Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\n\tModify Characters: yes? 0x%x", charArbServStatus.Player5PermModifyCharacters)
+	}
+
+	ret += fmt.Sprintf("\nPlayer5Ready: 0x%x", charArbServStatus.Player5Ready)
+
+	ret += fmt.Sprintf("\nUnk7 (cNetwork.field_772): 0x%x", charArbServStatus.Unknown7)
+
+	if charArbServStatus.RefreshCharacters == 0 {
+		ret += "\nRefresh Characters: no"
+	} else if charArbServStatus.RefreshCharacters == 1 {
+		ret += "\nRefresh Characters: yes"
+	} else {
+		ret += fmt.Sprintf("\nRefresh Characters: yes? 0x%x", charArbServStatus.RefreshCharacters)
+	}
 
 	for k, v := range charArbServStatus.CharIsReady {
 		if v == 0 {
@@ -729,10 +1179,17 @@ func (charArbServStatus IEMPSettingsFullSet) String() string {
 		} else {
 			ret += fmt.Sprintf("\nCharacter "+strconv.Itoa(k)+" is ready? 0x%x", v)
 		}
-
 	}
 
-	ret += "\nUnk4: " + hex.EncodeToString(charArbServStatus.Unknown4[:])
+	for k, v := range charArbServStatus.SlotHasChar {
+		if v == 0 {
+			ret += "\nCharacter Slot " + strconv.Itoa(k) + " has no character"
+		} else if v == 1 {
+			ret += "\nCharacter Slot " + strconv.Itoa(k) + " has a character"
+		} else {
+			ret += fmt.Sprintf("\nCharacter Slot "+strconv.Itoa(k)+" has a character? 0x%x", v)
+		}
+	}
 
 	for k, v := range charArbServStatus.CharOwnerPlayerID {
 		ret += fmt.Sprintf("\nCharacter "+strconv.Itoa(k)+" is controlled by 0x%x", v)
@@ -762,7 +1219,16 @@ func (charArbServStatus IEMPSettingsFullSet) String() string {
 	} else {
 		ret += fmt.Sprintf("\nListenToJoinRequests: Yes? 0x%x", charArbServStatus.ListenToJoinRequests)
 	}
-	ret += "\nUnk5: " + hex.EncodeToString(charArbServStatus.Unknown5[:])
+
+	ret += fmt.Sprintf("\nArea Start (x/y): 0x%x/0x%x", charArbServStatus.AreaStartX, charArbServStatus.AreaStartY)
+	ret += fmt.Sprintf("\nGore: 0x%x", charArbServStatus.Gore)
+	ret += fmt.Sprintf("\nGoreOption: 0x%x", charArbServStatus.GoreOption)
+
+	// ret += "\nUnk10: " + hex.EncodeToString(charArbServStatus.Unknown10[:])
+	// ret += fmt.Sprintf("\nArea Name: %s (%d)", "NULL", charArbServStatus.AreaNameLength)
+	ret += fmt.Sprintf("\nArea Name: %s (%d)", charArbServStatus.AreaName, charArbServStatus.AreaNameLength)
+	ret += fmt.Sprintf("\nUnk9: 0x%x", charArbServStatus.Unknown10)
+	ret += fmt.Sprintf("\nUnk10: 0x%x", charArbServStatus.Unknown11)
 	return ret
 }
 
